@@ -1,0 +1,95 @@
+diff --git a/bin/hbase b/bin/hbase
+index 6bf03f7257..2f62f2aa52 100755
+--- a/bin/hbase
++++ b/bin/hbase
+@@ -514,6 +514,11 @@ if [[ $jruby_needed ]]; then
+   fi
+ fi
+ 
++T2C_OPTS="-noverify -Dt2c.mode=prod"
++T2C_OPTS="$T2C_OPTS -Dconf=CONF_PATH_MACRO"
++T2C_OPTS="$T2C_OPTS -Dt2c.t2c_root_abs_path=T2C_DIR_MACRO"
++T2C_OPTS="$T2C_OPTS -Dt2c.target_system_abs_path=SYS_DIR_MACRO"
++
+ # figure out which class to run
+ if [ "$COMMAND" = "shell" ] ; then
+ 	#find the hbase ruby sources
+@@ -587,9 +592,10 @@ elif [ "$COMMAND" = "snapshot" ] ; then
+     exit 1
+   fi
+ elif [ "$COMMAND" = "master" ] ; then
+-  CLASS='org.apache.hadoop.hbase.master.HMaster'
++  CLASSPATH="$CLASSPATH:T2C_DIR_MACRO/target/t2c-1.0-SNAPSHOT-jar-with-dependencies.jar"
++  CLASS='edu.jhu.order.t2c.dynamicd.runtime.MainWrapper org.apache.hadoop.hbase.master.HMaster'
+   if [ "$1" != "stop" ] && [ "$1" != "clear" ] ; then
+-    HBASE_OPTS="$HBASE_OPTS $HBASE_MASTER_OPTS"
++    HBASE_OPTS="$HBASE_OPTS $HBASE_MASTER_OPTS $T2C_OPTS"
+   fi
+ elif [ "$COMMAND" = "regionserver" ] ; then
+   CLASS='org.apache.hadoop.hbase.regionserver.HRegionServer'
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/snapshot/TestSnapshotDescriptionUtils.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/snapshot/TestSnapshotDescriptionUtils.java
+index b3e1d9640f..da6cb43c32 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/snapshot/TestSnapshotDescriptionUtils.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/snapshot/TestSnapshotDescriptionUtils.java
+@@ -77,6 +77,14 @@ public class TestSnapshotDescriptionUtils {
+ 
+   @Test
+   public void testValidateMissingTableName() throws IOException {
++    System.out.println("Classpath: ");
++    String classpathStr = System.getProperty("java.class.path");
++    String[] classpathEntries = classpathStr.split(System.getProperty("path.separator"));
++
++    for (String entry : classpathEntries) {
++      System.out.println(entry);
++    }
++
+     Configuration conf = new Configuration(false);
+     try {
+       SnapshotDescriptionUtils.validate(SnapshotDescription.newBuilder().setName("fail").build(),
+diff --git a/pom.xml b/pom.xml
+index 02b89ed718..2ea2389b8d 100755
+--- a/pom.xml
++++ b/pom.xml
+@@ -671,6 +671,42 @@
+           <artifactId>jamon-maven-plugin</artifactId>
+           <version>${jamon.plugin.version}</version>
+         </plugin>
++        <plugin>
++          <groupId>org.apache.maven.plugins</groupId>
++          <artifactId>maven-dependency-plugin</artifactId>
++          <executions>
++            <execution>
++              <id>copy-dependencies</id>
++              <phase>prepare-package</phase>
++              <goals>
++                <goal>copy-dependencies</goal>
++              </goals>
++              <configuration>
++                <outputDirectory>${project.build.directory}/lib</outputDirectory>
++                <overWriteReleases>false</overWriteReleases>
++                <overWriteSnapshots>false</overWriteSnapshots>
++                <overWriteIfNewer>true</overWriteIfNewer>
++              </configuration>
++            </execution>
++          </executions>
++        </plugin>
++
++        <plugin>
++          <groupId>org.apache.maven.plugins</groupId>
++          <artifactId>maven-jar-plugin</artifactId>
++          <configuration>
++            <archive>
++              <manifest>
++                <addClasspath>true</addClasspath>
++                <!-- <classpathPrefix>lib</classpathPrefix> -->
++                <!-- <mainClass>test.org.Cliente</mainClass> -->
++              </manifest>
++              <manifestEntries>
++                <Class-Path>lib/</Class-Path>
++              </manifestEntries>
++            </archive>
++          </configuration>
++        </plugin>
+         <!-- Make a jar and put the sources in the jar.
+         In the parent pom, so submodules will do the right thing. -->
+         <plugin>

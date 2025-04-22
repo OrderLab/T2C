@@ -1,0 +1,93 @@
+diff --git a/bin/zkServer.sh b/bin/zkServer.sh
+index 23d1e2132..3347e5006 100755
+--- a/bin/zkServer.sh
++++ b/bin/zkServer.sh
+@@ -125,7 +125,7 @@ start)
+     fi
+     nohup "$JAVA" $ZOO_DATADIR_AUTOCREATE "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" \
+     "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}" \
+-    -cp "$CLASSPATH" $JVMFLAGS $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
++    -cp "$CLASSPATH" $JVMFLAGS "-Dreadonlymode.enabled=true" $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
+     if [ $? -eq 0 ]
+     then
+       if /bin/echo -n $! > "$ZOOPIDFILE"
+diff --git a/build.xml b/build.xml
+index 9283a2fc7..6f312fdfd 100644
+--- a/build.xml
++++ b/build.xml
+@@ -103,7 +103,7 @@ xmlns:maven="antlib:org.apache.maven.artifact.ant">
+ 
+     <property name="ivy.version" value="2.2.0"/>
+     <property name="ivy.url"
+-              value="http://repo2.maven.org/maven2/org/apache/ivy/ivy" />
++              value="https://repo1.maven.org/maven2/org/apache/ivy/ivy" />
+     <property name="ivy.home" value="${user.home}/.ant" />
+     <property name="ivy.lib" value="${build.dir}/lib"/>
+     <property name="ivy.package.lib" value="${build.dir}/package/lib"/>
+diff --git a/ivysettings.xml b/ivysettings.xml
+index 52cfa52df..d7432d843 100644
+--- a/ivysettings.xml
++++ b/ivysettings.xml
+@@ -18,11 +18,11 @@
+ -->
+ 
+   <property name="repo.maven.org"
+-    value="http://repo1.maven.org/maven2/" override="false"/>
++    value="https://repo1.maven.org/maven2/" override="false"/>
+   <property name="repo.jboss.org"
+-    value="http://repository.jboss.org/nexus/content/groups/public/" override="false"/>
++    value="https://repository.jboss.org/nexus/content/groups/public/" override="false"/>
+   <property name="repo.sun.org"
+-    value="http://download.java.net/maven/2/" override="false"/>
++    value="https://download.java.net/maven/2/" override="false"/>
+   <property name="maven2.pattern"
+     value="[organisation]/[module]/[revision]/[module]-[revision]"/>
+   <property name="maven2.pattern.ext" value="${maven2.pattern}.[ext]"/>
+diff --git a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+index e369c3846..b3a5cf949 100644
+--- a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
++++ b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+@@ -88,6 +88,7 @@ public class ZooKeeperMain {
+         commandMap.put("redo","cmdno");
+         commandMap.put("printwatches", "on|off");
+         commandMap.put("quit", "");
++	commandMap.put("multi", "");
+ 
+         new CloseCommand().addToMap(commandMapCli);
+         new CreateCommand().addToMap(commandMapCli);
+@@ -650,6 +651,22 @@ public class ZooKeeperMain {
+             } else {
+                 connectToZK(host);                
+             }
++        } else if (cmd.equals("multi")) {
++            //CHANG: customized helper command
++            //model after testMultiTransaction
++            try {
++                //zk.create("/tnode1", "aa".getBytes(),
++                //        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
++                Transaction transaction = zk.transaction();
++                //transaction.setData("/11", "no way".getBytes(), -1);
++                transaction.create("/44", "bb".getBytes(),
++                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
++                transaction.commit();
++            }
++            catch (Exception ex)
++            {
++                ex.printStackTrace();
++            }
+         } 
+         
+         // Below commands all need a live connection
+diff --git a/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java b/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
+index cb4fedb5a..9fa31c18f 100644
+--- a/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
++++ b/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
+@@ -82,7 +82,7 @@ public class ReadOnlyRequestProcessor extends Thread implements RequestProcessor
+                 case OpCode.setData:
+                 case OpCode.reconfig:
+                 case OpCode.setACL:
+-                case OpCode.multi:
++                //case OpCode.multi:
+                 case OpCode.check:
+                     ReplyHeader hdr = new ReplyHeader(request.cxid, zks.getZKDatabase()
+                             .getDataTreeLastProcessedZxid(), Code.NOTREADONLY.intValue());

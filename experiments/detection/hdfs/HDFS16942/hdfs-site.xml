@@ -1,0 +1,11 @@
+<configuration>
+	<property>
+ 		<name>dfs.replication</name>
+  		<value>1</value>
+	</property>
+
+    <property>
+        <name>dfs.namenode.full.block.report.lease.length.ms</name>
+        <value>1000</value>
+    </property>
+</configuration>

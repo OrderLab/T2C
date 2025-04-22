@@ -1,0 +1,59 @@
+diff --git a/bin/zkServer.sh b/bin/zkServer.sh
+index 51dbe9f58..c33ea9ebd 100755
+--- a/bin/zkServer.sh
++++ b/bin/zkServer.sh
+@@ -138,7 +138,7 @@ start)
+       fi
+     fi
+     nohup "$JAVA" "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}" \
+-    -cp "$CLASSPATH" $JVMFLAGS $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
++    -cp "$CLASSPATH" $JVMFLAGS "-Dreadonlymode.enabled=true" $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
+     if [ $? -eq 0 ]
+     then
+       case "$OSTYPE" in
+diff --git a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+index 6ca538b5b..325c0f3af 100644
+--- a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
++++ b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+@@ -87,6 +87,7 @@ public boolean getPrintWatches( ) {
+         commandMap.put("printwatches", "on|off");
+         commandMap.put("quit","");
+         commandMap.put("addauth", "scheme auth");
++        commandMap.put("multi", "");
+     }
+ 
+     static void usage() {
+@@ -707,6 +708,20 @@ protected boolean processZKCmd(MyCommandOptions co)
+             String newPath = zk.create(path, args[first+2].getBytes(), acl,
+                     flags);
+             System.err.println("Created " + newPath);
++        } else if (cmd.equals("multi")) {
++            //CHANG: customized helper command
++            //model after testMultiTransaction
++            try {
++                //zk.create("/tnode1", "aa".getBytes(),
++                //        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
++                Transaction transaction = zk.transaction();
++                //transaction.setData("/11", "no way".getBytes(), -1);
++                transaction.create("/bad", "bb".getBytes(),
++                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
++                transaction.commit();
++            } catch (Exception ex) {
++                ex.printStackTrace();
++            }
+         } else if (cmd.equals("delete") && args.length >= 2) {
+             path = args[1];
+             zk.delete(path, watch ? Integer.parseInt(args[2]) : -1);
+diff --git a/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java b/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
+index dd4ad4529..0a708489d 100644
+--- a/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
++++ b/src/java/main/org/apache/zookeeper/server/quorum/ReadOnlyRequestProcessor.java
+@@ -83,7 +83,7 @@ public void run() {
+                 case OpCode.delete:
+                 case OpCode.setData:
+                 case OpCode.setACL:
+-                case OpCode.multi:
++                //case OpCode.multi:
+                 case OpCode.check:
+                     ReplyHeader hdr = new ReplyHeader(request.cxid, zks.getZKDatabase()
+                             .getDataTreeLastProcessedZxid(), Code.NOTREADONLY.intValue());

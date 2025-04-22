@@ -1,0 +1,113 @@
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
+index 0bb1987a117..1cb19b36a9f 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
+@@ -715,6 +715,10 @@ public void writeBlock(final ExtendedBlock block,
+           + Arrays.asList(targets));
+     }
+ 
++    if (true){
++      throw new IOException("CHANG: inject IOException!");
++    }
++
+     if (LOG.isDebugEnabled()) {
+       LOG.debug("opWriteBlock: stage={}, clientname={}\n  " +
+               "block  ={}, newGs={}, bytesRcvd=[{}, {}]\n  " +
+@@ -929,6 +933,9 @@ public void writeBlock(final ExtendedBlock block,
+       IOUtils.closeStream(mirrorIn);
+       IOUtils.closeStream(replyOut);
+       IOUtils.closeSocket(mirrorSock);
++
++      LOG.warn("CHANG: this is where you should releaseAnyRemainingReservedSpace");
++
+       IOUtils.closeStream(blockReceiver);
+       setCurrentBlockReceiver(null);
+     }
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/LocalReplicaInPipeline.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/LocalReplicaInPipeline.java
+index 345c329c622..2bdee672de0 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/LocalReplicaInPipeline.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/LocalReplicaInPipeline.java
+@@ -162,6 +162,8 @@ public long getOriginalBytesReserved() {
+ 
+   @Override // ReplicaInPipeline
+   public void releaseAllBytesReserved() {
++    LOG.warn("CHANG: releaseAllBytesReserved!");
++
+     getVolume().releaseReservedSpace(bytesReserved);
+     getVolume().releaseLockedMemory(bytesReserved);
+     bytesReserved = 0;
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/FsDatasetImpl.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/FsDatasetImpl.java
+index 027a0bf681e..8259e673dc3 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/FsDatasetImpl.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/FsDatasetImpl.java
+@@ -3337,5 +3337,9 @@ void stopAllDataxceiverThreads(FsVolumeImpl volume) {
+       }
+     }
+   }
++
++  public List<FsVolumeImpl> getVolumeList() {
++    return volumes.getVolumes();
++  }
+ }
+ 
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/TestSpaceReservation.java b/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/TestSpaceReservation.java
+index 2daca863205..89e9e131a02 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/TestSpaceReservation.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/TestSpaceReservation.java
+@@ -30,6 +30,13 @@
+ import static org.junit.Assert.assertEquals;
+ import static org.junit.Assert.fail;
+ 
++import java.util.Collection;
++import java.util.EnumSet;
++
++import org.apache.hadoop.fs.CreateFlag;
++import org.apache.hadoop.fs.permission.FsPermission;
++import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
++import org.apache.hadoop.hdfs.server.datanode.ReplicaInfo;
+ import org.apache.hadoop.fs.BlockLocation;
+ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+ import org.apache.hadoop.fs.FSDataOutputStream;
+@@ -745,4 +752,42 @@ public Boolean get() {
+     }, 500, 30000);
+     checkReservedSpace(0);
+   }
++
++  @Test(timeout = 300000)
++  public void testReplicaInfoBytesReservedReleasedOnFinalize() throws IOException {
++    short replication = 3;
++    int bufferLength = 4096;
++    startCluster(BLOCK_SIZE, replication, -1);
++
++    String methodName = GenericTestUtils.getMethodName();
++    Path path = new Path("/" + methodName + ".01.dat");
++
++    FSDataOutputStream fos =
++            fs.create(path, FsPermission.getFileDefault(), EnumSet.of(CreateFlag.CREATE), bufferLength,
++                    replication, BLOCK_SIZE, null);
++    // Allocate a block.
++    fos.write(new byte[bufferLength]);
++    fos.hsync();
++
++    DataNode dataNode = cluster.getDataNodes().get(0);
++    FsDatasetImpl fsDataSetImpl = (FsDatasetImpl) dataNode.getFSDataset();
++    long expectedReservedSpace = BLOCK_SIZE - bufferLength;
++
++    String bpid = cluster.getNamesystem().getBlockPoolId();
++    Collection<ReplicaInfo> replicas = FsDatasetTestUtil.getReplicas(fsDataSetImpl, bpid);
++    ReplicaInfo r = replicas.iterator().next();
++
++    // Verify Initial Bytes Reserved for Replica and Volume are correct
++    assertEquals(fsDataSetImpl.getVolumeList().get(0).getReservedForReplicas(),
++            expectedReservedSpace);
++    assertEquals(r.getBytesReserved(), expectedReservedSpace);
++
++    // Verify Bytes Reserved for Replica and Volume are correct after finalize
++    fsDataSetImpl.finalizeNewReplica(r, new ExtendedBlock(bpid, r));
++
++    assertEquals(fsDataSetImpl.getVolumeList().get(0).getReservedForReplicas(), 0L);
++    assertEquals(r.getBytesReserved(), 0L);
++
++    fos.close();
++  }
+ }

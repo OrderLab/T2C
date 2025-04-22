@@ -1,0 +1,33 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for jepsen.cassandra:jepsen.cassandra:jar:0.1.0-SNAPSHOT
+[WARNING] 'repositories.repository.id' must not be 'local', this identifier is reserved for the local repository, using it for other repositories will corrupt your repository metadata. @ line 57, column 11
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] -----------------< jepsen.cassandra:jepsen.cassandra >------------------
+[INFO] Building jepsen.cassandra 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] Could not transfer metadata edu.uva.liftlab:java-client:1.0-SNAPSHOT/maven-metadata.xml from/to local (/users/dimas/lein_repo): Cannot access /users/dimas/lein_repo with type default using the available connector factories: BasicRepositoryConnectorFactory
+[WARNING] edu.uva.liftlab:java-client:1.0-SNAPSHOT/maven-metadata.xml failed to transfer from /users/dimas/lein_repo during a previous attempt. This failure was cached in the local repository and resolution will not be reattempted until the update interval of local has elapsed or updates are forced. Original error: Could not transfer metadata edu.uva.liftlab:java-client:1.0-SNAPSHOT/maven-metadata.xml from/to local (/users/dimas/lein_repo): Cannot access /users/dimas/lein_repo with type default using the available connector factories: BasicRepositoryConnectorFactory
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  0.478 s
+[INFO] Finished at: 2024-09-15T01:47:48Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal on project jepsen.cassandra: Could not collect dependencies for project jepsen.cassandra:jepsen.cassandra:jar:0.1.0-SNAPSHOT
+[ERROR] Failed to read artifact descriptor for edu.uva.liftlab:java-client:jar:1.0-SNAPSHOT
+[ERROR] 	Caused by: The following artifacts could not be resolved: edu.uva.liftlab:java-client:pom:1.0-SNAPSHOT (absent): Could not transfer artifact edu.uva.liftlab:java-client:pom:1.0-SNAPSHOT from/to local (/users/dimas/lein_repo): Cannot access /users/dimas/lein_repo with type default using the available connector factories: BasicRepositoryConnectorFactory
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException

@@ -1,0 +1,255 @@
+From bfe881e5c77cce08c2d1e114365745d9d8c34371 Mon Sep 17 00:00:00 2001
+From: diwangs <diwangs@cs.jhu.edu>
+Date: Tue, 13 Jun 2023 15:39:20 -0400
+Subject: [PATCH] Dummy commit for patch
+
+---
+ bin/zkEnv.sh                                  |  4 +-
+ bin/zkServer.sh                               |  5 +-
+ build.xml                                     |  2 +-
+ .../test/org/apache/zookeeper/ZKTestCase.java |  3 +
+ .../org/apache/zookeeper/test/ClientBase.java | 76 +++++++++++++++++--
+ superdigest.sh                                |  2 +
+ 6 files changed, 82 insertions(+), 10 deletions(-)
+ create mode 100755 superdigest.sh
+
+diff --git a/bin/zkEnv.sh b/bin/zkEnv.sh
+index 43cbc2235..47b42af8c 100755
+--- a/bin/zkEnv.sh
++++ b/bin/zkEnv.sh
+@@ -101,6 +101,8 @@ done
+ 
+ #make it work for developers
+ CLASSPATH="$ZOOBINDIR/../build/classes:$CLASSPATH"
++#CHANG: load testing classes at runtime
++CLASSPATH="$ZOOBINDIR/../build/test/classes:$CLASSPATH"
+ 
+ case "`uname`" in
+     CYGWIN*) cygwin=true ;;
+@@ -112,4 +114,4 @@ then
+     CLASSPATH=`cygpath -wp "$CLASSPATH"`
+ fi
+ 
+-#echo "CLASSPATH=$CLASSPATH"
+\ No newline at end of file
++#echo "CLASSPATH=$CLASSPATH"
+diff --git a/bin/zkServer.sh b/bin/zkServer.sh
+index 51dbe9f58..933dee028 100755
+--- a/bin/zkServer.sh
++++ b/bin/zkServer.sh
+@@ -34,6 +34,8 @@ else
+   . "$ZOOBINDIR/zkEnv.sh"
+ fi
+ 
++JMXDISABLE="true"
++SERVER_JVMFLAGS="-Dzookeeper.DigestAuthenticationProvider.superDigest=super:UdxDQl4f9v5oITwcAsO9bmWgHSI="
+ # See the following page for extensive details on setting
+ # up the JVM to accept JMX remote management:
+ # http://java.sun.com/javase/6/docs/technotes/guides/management/agent.html
+@@ -137,8 +139,9 @@ start)
+          exit 0
+       fi
+     fi
++    T2CFLAGS="-Dt2c.mode=invivo -Dconf=/home/diwangs/Codes/PhD/2_proj/t2c_baseline/T2C/conf/samples/zk-3.4.11.properties -Dt2c.t2c_root_abs_path=/home/diwangs/Codes/PhD/2_proj/t2c_baseline/T2C -Dt2c.target_system_abs_path=/home/diwangs/Codes/PhD/2_proj/t2c_baseline/zookeeper"
+     nohup "$JAVA" "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}" \
+-    -cp "$CLASSPATH" $JVMFLAGS $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
++    -cp "$CLASSPATH" $JVMFLAGS $SERVER_JVMFLAGS $T2CFLAGS edu.jhu.order.t2c.dynamicd.runtime.MainWrapper $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
+     if [ $? -eq 0 ]
+     then
+       case "$OSTYPE" in
+diff --git a/build.xml b/build.xml
+index 7384aa836..ecc8b7f07 100644
+--- a/build.xml
++++ b/build.xml
+@@ -381,7 +381,7 @@ xmlns:cs="antlib:com.puppycrawl.tools.checkstyle">
+     
+     <target name="build-generated" depends="compile_jute,version-info,ivy-retrieve" >
+         <javac srcdir="${src_generated.dir}" destdir="${build.classes}" includeantruntime="false"
+-            target="${javac.target}" source="${javac.source}" debug="on" classpath="${ivy.lib}/audience-annotations-${audience-annotations.version}.jar" />
++            target="${javac.target}" source="${javac.source}" debug="on" classpath="/home/diwangs/Codes/PhD/2_proj/t2c_baseline/T2C/target/t2c-1.0-SNAPSHOT-jar-with-dependencies.jar:${ivy.lib}/audience-annotations-${audience-annotations.version}.jar" />
+     </target>
+     
+     <target name="ivy-download" unless="ivy.jar.exists" depends="init">
+diff --git a/src/java/test/org/apache/zookeeper/ZKTestCase.java b/src/java/test/org/apache/zookeeper/ZKTestCase.java
+index 9098fc47e..d5222253c 100644
+--- a/src/java/test/org/apache/zookeeper/ZKTestCase.java
++++ b/src/java/test/org/apache/zookeeper/ZKTestCase.java
+@@ -42,6 +42,7 @@ public class ZKTestCase {
+     private static final Logger LOG = LoggerFactory.getLogger(ZKTestCase.class);
+ 
+     private String testName;
++    public static boolean ifAlreadyCleaned = false;
+ 
+     protected String getTestName() {
+         return testName;
+@@ -57,6 +58,8 @@ public void starting(FrameworkMethod method) {
+             System.setProperty("zookeeper.4lw.commands.whitelist", "*");
+ 
+             LOG.info("STARTING " + testName);
++
++            ifAlreadyCleaned = false;
+         }
+ 
+         @Override
+diff --git a/src/java/test/org/apache/zookeeper/test/ClientBase.java b/src/java/test/org/apache/zookeeper/test/ClientBase.java
+index 7595a029b..e1ce75c50 100644
+--- a/src/java/test/org/apache/zookeeper/test/ClientBase.java
++++ b/src/java/test/org/apache/zookeeper/test/ClientBase.java
+@@ -20,11 +20,12 @@
+ 
+ import static org.apache.zookeeper.client.FourLetterWordMain.send4LetterWord;
+ 
+-import java.io.BufferedInputStream;
+-import java.io.ByteArrayOutputStream;
+-import java.io.File;
+-import java.io.FileInputStream;
+-import java.io.IOException;
++import java.io.*;
++// import java.io.BufferedInputStream;
++// import java.io.ByteArrayOutputStream;
++// import java.io.File;
++// import java.io.FileInputStream;
++// import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.Iterator;
+@@ -42,6 +43,7 @@
+ 
+ import junit.framework.TestCase;
+ 
++import org.apache.zookeeper.*;
+ import org.apache.zookeeper.common.Time;
+ import org.apache.zookeeper.KeeperException;
+ import org.apache.zookeeper.PortAssignment;
+@@ -72,7 +74,7 @@ public abstract class ClientBase extends ZKTestCase {
+     static final File BASETEST =
+         new File(System.getProperty("build.test.dir", "build"));
+ 
+-    protected int port = PortAssignment.unique();
++    protected int port = 2181;
+     protected String hostPort = "127.0.0.1:" + port;
+     protected String ipv6HostPort = "[0:0:0:0:0:0:0:1]:" + port;
+     protected int maxCnxns = 0;
+@@ -141,6 +143,9 @@ synchronized public boolean isConnected() {
+         synchronized public void waitForConnected(long timeout)
+             throws InterruptedException, TimeoutException
+         {
++            if (true)
++                return;
++
+             long expire = Time.currentElapsedTime() + timeout;
+             long left = timeout;
+             while(!connected && left > 0) {
+@@ -181,6 +186,9 @@ synchronized public void waitForReadOnlyConnected(long timeout)
+         synchronized public void waitForDisconnected(long timeout)
+             throws InterruptedException, TimeoutException
+         {
++            if (true)
++                return;
++
+             long expire = Time.currentElapsedTime() + timeout;
+             long left = timeout;
+             while(connected && left > 0) {
+@@ -194,6 +202,53 @@ synchronized public void waitForDisconnected(long timeout)
+         }
+     }
+ 
++    private void cleanup(CountdownWatcher watcher, String hp, int timeout) throws IOException
++    {
++        if(ZKTestCase.ifAlreadyCleaned) return;
++
++        TestableZooKeeper authzk = new TestableZooKeeper(hp, timeout, watcher);
++
++        LOG.info("CHANGDING: enter createClient");
++        ZKTestCase.ifAlreadyCleaned = true;
++
++        LOG.info("CHANGDING: do cleanup");
++
++        // if(TestEngine.Config.forceCleanup.equals("false"))
++        //     return;
++
++        StringWriter sw = new StringWriter();
++        PrintWriter pw = new PrintWriter(sw);
++
++        //CHANG: force to cleanup
++        try {
++            //this assumes that you already add auth for super user when server starts
++            //https://community.hortonworks.com/articles/29900/zookeeper-using-superdigest-to-gain-full-access-to.html
++            authzk.addAuthInfo("digest","super:super123".getBytes());
++
++            LOG.info("DIWANG: getting children");
++            List<String> children = authzk.getChildren("/", false);
++            LOG.info("CHANG: children size"+children.size());
++            for (String child : children) {
++                if(child.equals("zookeeper")) continue;
++
++                LOG.info("CHANG: do cleanup for " + "/" + child);
++                try {
++                    ZKUtil.deleteRecursive(authzk, "/" + child);
++                } catch (Exception ex) {
++                    ex.printStackTrace(pw);
++                    LOG.error(sw.toString());
++                }
++            }
++
++            LOG.info("CHANG: close session");
++            authzk.close();
++        }catch (Exception ex)
++        {
++            ex.printStackTrace(pw);
++            LOG.error(sw.toString());
++        }
++    }
++
+     protected TestableZooKeeper createClient()
+         throws IOException, InterruptedException
+     {
+@@ -227,6 +282,10 @@ protected TestableZooKeeper createClient(CountdownWatcher watcher,
+         throws IOException, InterruptedException
+     {
+         watcher.reset();
++
++        // DIWANG: instead of restarting server, do cleanup
++        cleanup(watcher, hp, timeout);
++
+         TestableZooKeeper zk = new TestableZooKeeper(hp, timeout, watcher);
+         if (!watcher.clientConnected.await(timeout, TimeUnit.MILLISECONDS))
+         {
+@@ -239,7 +298,8 @@ protected TestableZooKeeper createClient(CountdownWatcher watcher,
+             }
+             if (allClients != null) {
+                 allClients.add(zk);
+-                JMXEnv.ensureAll(getHexSessionId(zk.getSessionId()));
++                // @diwangs: Chang's suggestion, skipping session ID check
++                // JMXEnv.ensureAll(getHexSessionId(zk.getSessionId()));
+             } else {
+                 // test done - close the zk, not needed
+                 zk.close();
+@@ -480,6 +540,7 @@ public void setUp() throws Exception {
+ 
+         tmpDir = createTmpDir(BASETEST);
+ 
++        // @diwangs: skip starting the server
+         startServer();
+ 
+         LOG.info("Client test setup finished");
+@@ -487,6 +548,7 @@ public void setUp() throws Exception {
+ 
+     protected void startServer() throws Exception {
+         LOG.info("STARTING server");
++        return;
+         serverFactory = createNewServerInstance(serverFactory, hostPort,
+                 maxCnxns);
+         startServerInstance(tmpDir, serverFactory, hostPort);
+diff --git a/superdigest.sh b/superdigest.sh
+new file mode 100755
+index 000000000..2e3055355
+--- /dev/null
++++ b/superdigest.sh
+@@ -0,0 +1,2 @@
++export ZK_CLASSPATH=/etc/zookeeper/conf/:/home/diwangs/Codes/PhD/2_proj/t2c_baseline/zookeeper/build/lib/*:/home/diwangs/Codes/PhD/2_proj/t2c_baseline/zookeeper/build/*
++java -cp $ZK_CLASSPATH org.apache.zookeeper.server.auth.DigestAuthenticationProvider super:super123
+\ No newline at end of file
+-- 
+2.41.0
+

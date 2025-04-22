@@ -1,0 +1,8 @@
+**/store/*
+**/target/*
+**/*.log
+**/result
+**/.clj-kondo/*
+**/.lsp/*
+.direnv
+**/scratch

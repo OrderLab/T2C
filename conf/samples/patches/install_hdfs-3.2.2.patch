@@ -1,0 +1,126 @@
+diff --git a/hadoop-common-project/hadoop-common/src/main/bin/hadoop-functions.sh b/hadoop-common-project/hadoop-common/src/main/bin/hadoop-functions.sh
+index b3b8afcc79d..04d540eee99 100755
+--- a/hadoop-common-project/hadoop-common/src/main/bin/hadoop-functions.sh
++++ b/hadoop-common-project/hadoop-common/src/main/bin/hadoop-functions.sh
+@@ -2201,7 +2201,7 @@ function hadoop_daemon_handler
+         hadoop_start_daemon "${daemonname}" "${class}" "${daemon_pidfile}" "$@"
+       else
+         hadoop_start_daemon_wrapper "${daemonname}" \
+-        "${class}" "${daemon_pidfile}" "${daemon_outfile}" "$@"
++        ${class} "${daemon_pidfile}" "${daemon_outfile}" "$@"
+       fi
+     ;;
+   esac
+diff --git a/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh b/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
+index 1365fab7206..6550a644ede 100644
+--- a/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
++++ b/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
+@@ -102,6 +102,8 @@ export HADOOP_OS_TYPE=${HADOOP_OS_TYPE:-$(uname -s)}
+ # let users supply it on the command line.
+ # export HADOOP_CLIENT_OPTS=""
+ 
++export HADOOP_OPTS="-noverify -Dt2c.mode=prod -Dconf=CONF_PATH_MACRO -Dt2c.t2c_root_abs_path=T2C_DIR_MACRO -Dt2c.target_system_abs_path=SYS_DIR_MACRO"
++
+ #
+ # A note about classpaths.
+ #
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/pom.xml b/hadoop-hdfs-project/hadoop-hdfs/pom.xml
+index e09e1026719..2e910094ac8 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/pom.xml
++++ b/hadoop-hdfs-project/hadoop-hdfs/pom.xml
+@@ -36,6 +36,12 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
+   </properties>
+ 
+   <dependencies>
++    <!--to compile after adding this entry, you need to run ./run_engine install conf/samples/hdfs-3.2.2.properties-->
++    <dependency>
++      <groupId>edu.jhu.order</groupId>
++      <artifactId>t2c</artifactId>
++      <version>1.0</version>
++    </dependency>
+     <dependency>
+       <groupId>org.apache.hadoop</groupId>
+       <artifactId>hadoop-annotations</artifactId>
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs b/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
+index 94426a561fb..4a50e98d41b 100755
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
+@@ -96,7 +96,7 @@ function hdfscmd_case
+     datanode)
+       HADOOP_SUBCMD_SUPPORTDAEMONIZATION="true"
+       HADOOP_SECURE_CLASSNAME="org.apache.hadoop.hdfs.server.datanode.SecureDataNodeStarter"
+-      HADOOP_CLASSNAME='org.apache.hadoop.hdfs.server.datanode.DataNode'
++      HADOOP_CLASSNAME='edu.jhu.order.t2c.dynamicd.runtime.MainWrapper org.apache.hadoop.hdfs.server.datanode.DataNode'
+       hadoop_deprecate_envvar HADOOP_SECURE_DN_PID_DIR HADOOP_SECURE_PID_DIR
+       hadoop_deprecate_envvar HADOOP_SECURE_DN_LOG_DIR HADOOP_SECURE_LOG_DIR
+     ;;
+@@ -168,7 +168,7 @@ function hdfscmd_case
+     ;;
+     namenode)
+       HADOOP_SUBCMD_SUPPORTDAEMONIZATION="true"
+-      HADOOP_CLASSNAME='org.apache.hadoop.hdfs.server.namenode.NameNode'
++      HADOOP_CLASSNAME='edu.jhu.order.t2c.dynamicd.runtime.MainWrapper org.apache.hadoop.hdfs.server.namenode.NameNode'
+       hadoop_add_param HADOOP_OPTS hdfs.audit.logger "-Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER}"
+     ;;
+     nfs3)
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
+index 73b762407ad..ff3cb67c659 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
+@@ -17,6 +17,8 @@
+  */
+ package org.apache.hadoop.hdfs.server.datanode;
+ 
++import edu.jhu.order.t2c.dynamicd.runtime.MarkedOpFunc;
++import edu.jhu.order.t2c.dynamicd.runtime.Operation;
+ 
+ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_ADDRESS_DEFAULT;
+ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_ADDRESS_KEY;
+@@ -2004,7 +2006,10 @@ private void checkBlockToken(ExtendedBlock block,
+    * This method can only be called by the offerService thread.
+    * Otherwise, deadlock might occur.
+    */
++    @MarkedOpFunc("shutdown")
+   public void shutdown() {
++    Operation.appendOp(Operation.createOperation("shutdownDataNode", this));
++
+     stopMetricsLogger();
+     if (plugins != null) {
+       for (ServicePlugin p : plugins) {
+@@ -2751,6 +2756,7 @@ public static DataNode createDataNode(String args[],
+    */
+   @VisibleForTesting
+   @InterfaceAudience.Private
++  @MarkedOpFunc("createDataNode")
+   public static DataNode createDataNode(String args[], Configuration conf,
+       SecureResources resources) throws IOException {
+     DataNode dn = instantiateDataNode(args, conf, resources);
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
+index 44f397b61b3..2427aa5db45 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
+@@ -17,6 +17,8 @@
+  */
+ package org.apache.hadoop.hdfs.server.namenode;
+ 
++import edu.jhu.order.t2c.dynamicd.runtime.MarkedOpFunc;
++
+ import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_MAXIMUM_DATA_LENGTH;
+ import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_MAXIMUM_DATA_LENGTH_DEFAULT;
+ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_HANDLER_COUNT_DEFAULT;
+@@ -763,6 +765,7 @@ public FsServerDefaults getServerDefaults() throws IOException {
+   }
+ 
+   @Override // ClientProtocol
++  @MarkedOpFunc("create")
+   public HdfsFileStatus create(String src, FsPermission masked,
+       String clientName, EnumSetWritable<CreateFlag> flag,
+       boolean createParent, short replication, long blockSize,
+@@ -1132,6 +1135,7 @@ private boolean checkPathLength(String src) {
+   }
+     
+   @Override // ClientProtocol
++  @MarkedOpFunc("mkdirs")
+   public boolean mkdirs(String src, FsPermission masked, boolean createParent)
+       throws IOException {
+     checkNNStartup();

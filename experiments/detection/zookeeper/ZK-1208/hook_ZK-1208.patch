@@ -1,0 +1,94 @@
+diff --git a/src/java/main/org/apache/zookeeper/ClientCnxn.java b/src/java/main/org/apache/zookeeper/ClientCnxn.java
+index 94d2f5777..550aa4115 100644
+--- a/src/java/main/org/apache/zookeeper/ClientCnxn.java
++++ b/src/java/main/org/apache/zookeeper/ClientCnxn.java
+@@ -1382,7 +1382,7 @@ public void close() throws IOException {
+         } catch (InterruptedException e) {
+             // ignore, close the send/event threads
+         } finally {
+-            disconnect();
++            //disconnect();
+         }
+     }
+ 
+@@ -1448,16 +1448,17 @@ Packet queuePacket(RequestHeader h, ReplyHeader r, Record request,
+             packet.ctx = ctx;
+             packet.clientPath = clientPath;
+             packet.serverPath = serverPath;
+-            if (!state.isAlive() || closing) {
+-                conLossPacket(packet);
+-            } else {
++            //if (!state.isAlive() || closing) {
++            //    conLossPacket(packet);
++            //} else {
+                 // If the client is asking to close the session then
+                 // mark as closing
+                 if (h.getType() == OpCode.closeSession) {
+                     closing = true;
+                 }
+                 outgoingQueue.add(packet);
+-            }
++		System.out.println("CHANG: sent");
++            //}
+         }
+         sendThread.getClientCnxnSocket().wakeupCnxn();
+         return packet;
+diff --git a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+index 6ca538b5b..1f7fd6275 100644
+--- a/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
++++ b/src/java/main/org/apache/zookeeper/ZooKeeperMain.java
+@@ -687,6 +687,17 @@ protected boolean processZKCmd(MyCommandOptions co)
+         }
+         
+         if (cmd.equals("create") && args.length >= 3) {
++                Runnable runnable =
++                        new Runnable(){
++                            public void run(){
++                                try {
++                                    zk.close();
++                                } catch (Exception e) {}
++                            }
++                        };
++            Thread thread = new Thread(runnable);
++            thread.start();
++
+             int first = 0;
+             CreateMode flags = CreateMode.PERSISTENT;
+             if ((args[1].equals("-e") && args[2].equals("-s"))
+diff --git a/src/java/main/org/apache/zookeeper/server/DataTree.java b/src/java/main/org/apache/zookeeper/server/DataTree.java
+index f2537f35e..94b2e166a 100644
+--- a/src/java/main/org/apache/zookeeper/server/DataTree.java
++++ b/src/java/main/org/apache/zookeeper/server/DataTree.java
+@@ -901,6 +901,19 @@ void killSession(long session, long zxid) {
+                 }
+             }
+         }
++
++        {
++            System.out.println("CHANG: delay the closesession");
++            try{
++                Thread.sleep(5000);
++            }
++            catch (Exception ex)
++            {
++
++            }
++            System.out.println("CHANG: the closesession continues");
++
++        }
+     }
+ 
+     /**
+diff --git a/src/java/main/org/apache/zookeeper/server/PrepRequestProcessor.java b/src/java/main/org/apache/zookeeper/server/PrepRequestProcessor.java
+index 825c22ada..044e7d385 100644
+--- a/src/java/main/org/apache/zookeeper/server/PrepRequestProcessor.java
++++ b/src/java/main/org/apache/zookeeper/server/PrepRequestProcessor.java
+@@ -481,7 +481,7 @@ protected void pRequest2Txn(int type, long zxid, Request request, Record record,
+                                 path2Delete, null, 0, null));
+                     }
+ 
+-                    zks.sessionTracker.setSessionClosing(request.sessionId);
++                    //zks.sessionTracker.setSessionClosing(request.sessionId);
+                 }
+ 
+                 LOG.info("Processed session termination for sessionid: 0x"

@@ -1,0 +1,25 @@
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/blockmanagement/BlockManager.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/blockmanagement/BlockManager.java
+index 288f28b48f..909be7cfa8 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/blockmanagement/BlockManager.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/blockmanagement/BlockManager.java
+@@ -30,6 +30,7 @@
+ import java.util.BitSet;
+ import java.util.Collection;
+ import java.util.Collections;
++import java.util.Date;
+ import java.util.EnumSet;
+ import java.util.HashMap;
+ import java.util.HashSet;
+@@ -2576,6 +2577,12 @@ public boolean checkBlockReportLease(BlockReportContext context,
+       return true;
+     }
+     DatanodeDescriptor node = datanodeManager.getDatanode(nodeID);
++    try {
++        System.out.println("#### Sleep 5 seconds before checking lease");
++        Thread.sleep(5000);
++    } catch (InterruptedException e) {
++        e.printStackTrace();
++    }     
+     final long startTime = Time.monotonicNow();
+     return blockReportLeaseManager.checkLease(node, startTime,
+         context.getLeaseId());

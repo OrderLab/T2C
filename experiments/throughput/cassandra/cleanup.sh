@@ -1,0 +1,1 @@
+cd ~/cassandra && ./bin/nodetool stopdaemon && rm -r ./data

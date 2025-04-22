@@ -1,0 +1,99 @@
+diff --git a/zookeeper-server/src/main/java/org/apache/zookeeper/cli/CreateCommand.java b/zookeeper-server/src/main/java/org/apache/zookeeper/cli/CreateCommand.java
+index 04d49097c..51f8c95d9 100644
+--- a/zookeeper-server/src/main/java/org/apache/zookeeper/cli/CreateCommand.java
++++ b/zookeeper-server/src/main/java/org/apache/zookeeper/cli/CreateCommand.java
+@@ -25,6 +25,13 @@
+ import org.apache.zookeeper.data.ACL;
+ import org.apache.zookeeper.data.Stat;
+ import org.apache.zookeeper.server.EphemeralType;
++import org.apache.zookeeper.OpResult.CreateResult;
++import org.apache.zookeeper.ZooDefs.Ids;
++import org.apache.zookeeper.Op;
++import java.util.Arrays;
++import org.apache.zookeeper.OpResult;
++import org.apache.zookeeper.AsyncCallback.MultiCallback;
++import org.apache.zookeeper.ZooKeeper;
+ 
+ /**
+  * create command for cli
+@@ -62,9 +69,80 @@ public CliCommand parse(String[] cmdArgs) throws CliParseException {
+         return this;
+     }
+ 
++    void assertEquals(Object obj1, Object obj2) {
++        System.out.println("assertEquals " + obj1.equals(obj2));
++    }
++
++    void assertEquals(Object obj1, Object obj2, Object obj3) {
++        System.out.println("assertEquals " + obj1.equals(obj2) + " " + obj1.equals(obj3));
++    }
++
++    void assertNotNull(Object obj1, Object obj2) {
++        System.out.println("assertNotNull " + obj1);
++    }
++
++    public void testCreate2(boolean useAsync) throws Exception {
++        List<Op> ops = Arrays.asList(
++                Op.create("/multi0", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
++                Op.create("/multi1", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
++                Op.create("/multi2", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
++        List<OpResult> results = multi(zk, ops, useAsync);
++        for (int i = 0; i < ops.size(); i++) {
++            CreateResult createResult = (CreateResult) results.get(i);
++            assertEquals(ops.get(i).getPath(), createResult.getPath());
++            assertEquals(ZooDefs.OpCode.create2, createResult.getType(), createResult.getPath());
++            assertNotNull(createResult.getStat(), createResult.getPath());
++        }
++
++        zk.getData("/multi0", false, null);
++        zk.getData("/multi1", false, null);
++        zk.getData("/multi2", false, null);
++    }
++
++    static class MultiResult {
++
++        int rc;
++        List<OpResult> results;
++        boolean finished = false;
++
++    }
++
++    private List<OpResult> multi(ZooKeeper zk, Iterable<Op> ops, boolean useAsync)
++            throws KeeperException, InterruptedException {
++        if (useAsync) {
++            final MultiResult res = new MultiResult();
++            zk.multi(ops, new MultiCallback() {
++                @Override
++                public void processResult(int rc, String path, Object ctx, List<OpResult> opResults) {
++                    synchronized (res) {
++                        res.rc = rc;
++                        res.results = opResults;
++                        res.finished = true;
++                        res.notifyAll();
++                    }
++                }
++            }, null);
++            synchronized (res) {
++                while (!res.finished) {
++                    res.wait();
++                }
++            }
++            return res.results;
++        } else {
++            return zk.multi(ops);
++        }
++    }
+ 
+     @Override
+     public boolean exec() throws CliException {
++        if (true) {
++            try {
++                testCreate2(true);
++            } catch (Exception e) {
++                throw new RuntimeException(e);
++            }
++        }
++
+         boolean hasE = cl.hasOption("e");
+         boolean hasS = cl.hasOption("s");
+         boolean hasC = cl.hasOption("c");

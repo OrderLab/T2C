@@ -1,0 +1,73 @@
+diff --git a/bin/cassandra b/bin/cassandra
+index 006c6aee92..5807d746b7 100755
+--- a/bin/cassandra
++++ b/bin/cassandra
+@@ -184,6 +184,14 @@ esac
+ 
+ launch_service()
+ {
++    CLASSPATH="$CASSANDRA_HOME/build/test/classes/:$CLASSPATH"
++
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/t2c-1.0-SNAPSHOT-jar-with-dependencies.jar:$CLASSPATH"
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/hadoop-core-1.0.3.jar:$CLASSPATH"
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/byteman-3.0.3.jar:$CLASSPATH"
++
++    T2CFLAGS="-noverify -Dt2c.mode=prod -Dconf=CONF_PATH_MACRO -Dt2c.t2c_root_abs_path=T2C_DIR_MACRO -Dt2c.target_system_abs_path=SYS_DIR_MACRO"
++
+     pidpath="$1"
+     foreground="$2"
+     props="$3"
+@@ -201,14 +209,14 @@ launch_service()
+     if [ "x$foreground" != "x" ]; then
+         cassandra_parms="$cassandra_parms -Dcassandra-foreground=yes"
+         if [ "x$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" != "x" ]; then
+-            exec $NUMACTL "$JAVA" $JVM_OPTS "$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" $cassandra_parms -cp "$CLASSPATH" $props "$class"
++            exec $NUMACTL "$JAVA" $JVM_OPTS "$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" $T2CFLAGS $cassandra_parms -cp "$CLASSPATH" $props edu.jhu.order.t2c.dynamicd.runtime.MainWrapper "$class"
+         else
+-            exec $NUMACTL "$JAVA" $JVM_OPTS $cassandra_parms -cp "$CLASSPATH" $props "$class"
++            exec $NUMACTL "$JAVA" $JVM_OPTS $T2CFLAGS $cassandra_parms -cp "$CLASSPATH" $props edu.jhu.order.t2c.dynamicd.runtime.MainWrapper "$class"
+         fi
+     # Startup CassandraDaemon, background it, and write the pid.
+     else
+         if [ "x$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" != "x" ]; then
+-            exec $NUMACTL "$JAVA" $JVM_OPTS "$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" $cassandra_parms -cp "$CLASSPATH" $props "$class" <&- &
++            exec $NUMACTL "$JAVA" $JVM_OPTS "$JVM_ON_OUT_OF_MEMORY_ERROR_OPT" $T2CFLAGS $cassandra_parms -cp "$CLASSPATH" $props edu.jhu.order.t2c.dynamicd.runtime.MainWrapper "$class" <&- &
+             [ ! -z "$pidpath" ] && printf "%d" $! > "$pidpath"
+             true
+         else
+diff --git a/examples/hadoop_cql3_word_count/build.xml b/examples/hadoop_cql3_word_count/build.xml
+index 939e1b39d0..ac5ec75497 100644
+--- a/examples/hadoop_cql3_word_count/build.xml
++++ b/examples/hadoop_cql3_word_count/build.xml
+@@ -28,7 +28,7 @@
+     <property name="final.name" value="word_count" />
+     <property name="ivy.version" value="2.1.0" />
+     <property name="ivy.url"
+-              value="http://repo2.maven.org/maven2/org/apache/ivy/ivy" />
++              value="https://repo1.maven.org/maven2/org/apache/ivy/ivy" />
+ 
+     <condition property="ivy.jar.exists">
+         <available file="${build.dir}/ivy-${ivy.version}.jar" />
+diff --git a/src/java/org/apache/cassandra/cql3/QueryProcessor.java b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+index ef0ff12414..119d64005c 100644
+--- a/src/java/org/apache/cassandra/cql3/QueryProcessor.java
++++ b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+@@ -29,6 +29,8 @@ import com.google.common.base.Predicate;
+ import com.google.common.collect.Iterables;
+ import com.google.common.collect.Iterators;
+ import com.google.common.primitives.Ints;
++import edu.jhu.order.t2c.dynamicd.runtime.CassandraOperationParser;
++import edu.jhu.order.t2c.dynamicd.runtime.Operation;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -582,6 +584,9 @@ public class QueryProcessor implements QueryHandler
+     }
+     public static ParsedStatement parseStatement(String queryStr) throws SyntaxException
+     {
++        Operation op = CassandraOperationParser.createOperation(queryStr);
++        Operation.appendOp(op);
++
+         try
+         {
+             return CQLFragmentParser.parseAnyUnhandled(CqlParser::query, queryStr);

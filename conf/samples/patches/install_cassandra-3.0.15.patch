@@ -1,0 +1,557 @@
+diff --git a/bin/cassandra b/bin/cassandra
+index 6a6644e2cd..73f6504770 100755
+--- a/bin/cassandra
++++ b/bin/cassandra
+@@ -183,6 +183,14 @@ esac
+ 
+ launch_service()
+ {
++    CLASSPATH="$CASSANDRA_HOME/build/test/classes/:$CLASSPATH"
++
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/t2c-1.0-SNAPSHOT-jar-with-dependencies.jar:$CLASSPATH"
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/hadoop-core-1.0.3.jar:$CLASSPATH"
++    CLASSPATH="$CASSANDRA_HOME/build/lib/jars/byteman-3.0.3.jar:$CLASSPATH"
++
++    T2CFLAGS="-Dt2c.mode=prod -Dconf=$CONF_PATH_MACRO -Dt2c.t2c_root_abs_path=$T2C_DIR_MACRO -Dt2c.target_system_abs_path=$SYS_DIR_MACRO"
++
+     pidpath="$1"
+     foreground="$2"
+     props="$3"
+@@ -199,10 +207,10 @@ launch_service()
+     # to close stdout/stderr, but it's up to us not to background.
+     if [ "x$foreground" != "x" ]; then
+         cassandra_parms="$cassandra_parms -Dcassandra-foreground=yes"
+-        exec $NUMACTL "$JAVA" $JVM_OPTS $cassandra_parms -cp "$CLASSPATH" $props "$class"
++        exec $NUMACTL "$JAVA" $JVM_OPTS $T2CFLAGS $cassandra_parms -cp "$CLASSPATH" $props edu.jhu.order.t2c.dynamicd.runtime.MainWrapper "$class"
+     # Startup CassandraDaemon, background it, and write the pid.
+     else
+-        exec $NUMACTL "$JAVA" $JVM_OPTS $cassandra_parms -cp "$CLASSPATH" $props "$class" <&- &
++        exec $NUMACTL "$JAVA" $JVM_OPTS $T2CFLAGS $cassandra_parms -cp "$CLASSPATH" $props edu.jhu.order.t2c.dynamicd.runtime.MainWrapper "$class" <&- &
+         [ ! -z "$pidpath" ] && printf "%d" $! > "$pidpath"
+         true
+     fi
+diff --git a/build.properties.default b/build.properties.default
+index 5291659b78..11da534e32 100644
+--- a/build.properties.default
++++ b/build.properties.default
+@@ -1,4 +1,4 @@
+ # Maven2 Repository Locations (you can override these in "build.properties" to point to a local proxy, e.g. Nexus)
+-artifact.remoteRepository.central:     http://repo1.maven.org/maven2
+-artifact.remoteRepository.apache:      http://repo.maven.apache.org/maven2
++artifact.remoteRepository.central:     https://repo1.maven.org/maven2
++artifact.remoteRepository.apache:      https://repo.maven.apache.org/maven2
+ 
+diff --git a/build.xml b/build.xml
+index 60a010109b..c0a79688a5 100644
+--- a/build.xml
++++ b/build.xml
+@@ -84,7 +84,7 @@
+     <property name="maven-ant-tasks.version" value="2.1.3" />
+     <property name="maven-ant-tasks.local" value="${user.home}/.m2/repository/org/apache/maven/maven-ant-tasks"/>
+     <property name="maven-ant-tasks.url"
+-              value="http://repo2.maven.org/maven2/org/apache/maven/maven-ant-tasks" />
++              value="https://repo1.maven.org/maven2/org/apache/maven/maven-ant-tasks" />
+     <!-- details of how and which Maven repository we publish to -->
+     <property name="maven.version" value="3.0.3" />
+     <condition property="maven-repository-url" value="https://repository.apache.org/service/local/staging/deploy/maven2">
+diff --git a/examples/hadoop_cql3_word_count/build.xml b/examples/hadoop_cql3_word_count/build.xml
+index 939e1b39d0..ac5ec75497 100644
+--- a/examples/hadoop_cql3_word_count/build.xml
++++ b/examples/hadoop_cql3_word_count/build.xml
+@@ -28,7 +28,7 @@
+     <property name="final.name" value="word_count" />
+     <property name="ivy.version" value="2.1.0" />
+     <property name="ivy.url"
+-              value="http://repo2.maven.org/maven2/org/apache/ivy/ivy" />
++              value="https://repo1.maven.org/maven2/org/apache/ivy/ivy" />
+ 
+     <condition property="ivy.jar.exists">
+         <available file="${build.dir}/ivy-${ivy.version}.jar" />
+diff --git a/src/java/org/apache/cassandra/cql3/QueryProcessor.java b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+index 0e0ba3c635..b5a6654f9e 100644
+--- a/src/java/org/apache/cassandra/cql3/QueryProcessor.java
++++ b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+@@ -29,6 +29,8 @@ import com.google.common.base.Predicate;
+ import com.google.common.collect.Iterables;
+ import com.google.common.collect.Iterators;
+ import com.google.common.primitives.Ints;
++import edu.jhu.order.t2c.dynamicd.runtime.CassandraOperationParser;
++import edu.jhu.order.t2c.dynamicd.runtime.Operation;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -257,6 +259,8 @@ public class QueryProcessor implements QueryHandler
+ 
+     public static ParsedStatement.Prepared parseStatement(String queryStr, QueryState queryState) throws RequestValidationException
+     {
++        Operation op = CassandraOperationParser.createOperation(queryStr);
++        Operation.appendOp(op);
+         return getStatement(queryStr, queryState.getClientState());
+     }
+ 
+diff --git a/test/unit/org/apache/cassandra/cql3/validation/operations/InsertTest.java b/test/unit/org/apache/cassandra/cql3/validation/operations/InsertTest.java
+index 488e1c73d9..5ce3bde38d 100644
+--- a/test/unit/org/apache/cassandra/cql3/validation/operations/InsertTest.java
++++ b/test/unit/org/apache/cassandra/cql3/validation/operations/InsertTest.java
+@@ -18,48 +18,45 @@
+ 
+ package org.apache.cassandra.cql3.validation.operations;
+ 
+-import org.junit.Assert;
+-import org.junit.Test;
+-
+ import org.apache.cassandra.cql3.Attributes;
+ import org.apache.cassandra.cql3.CQLTester;
+ import org.apache.cassandra.cql3.UntypedResultSet;
+-import org.apache.cassandra.cql3.UntypedResultSet.Row;
+ import org.apache.cassandra.exceptions.InvalidRequestException;
++import org.junit.Assert;
++import org.junit.Test;
+ 
+-public class InsertTest extends CQLTester
+-{
+-    @Test
+-    public void testInsertWithUnset() throws Throwable
+-    {
++public class InsertTest extends CQLTester {
++    // @Test
++    public void testInsertWithUnset() throws Throwable {
+         createTable("CREATE TABLE %s (k int PRIMARY KEY, s text, i int)");
+ 
+         // insert using nulls
+         execute("INSERT INTO %s (k, s, i) VALUES (10, ?, ?)", "text", 10);
+         execute("INSERT INTO %s (k, s, i) VALUES (10, ?, ?)", null, null);
+         assertRows(execute("SELECT s, i FROM %s WHERE k = 10"),
+-                   row(null, null) // sending null deletes the data
++                row(null, null) // sending null deletes the data
+         );
+         // insert using UNSET
+         execute("INSERT INTO %s (k, s, i) VALUES (11, ?, ?)", "text", 10);
+         execute("INSERT INTO %s (k, s, i) VALUES (11, ?, ?)", unset(), unset());
+         assertRows(execute("SELECT s, i FROM %s WHERE k=11"),
+-                   row("text", 10) // unset columns does not delete the existing data
++                row("text", 10) // unset columns does not delete the existing data
+         );
+ 
+         assertInvalidMessage("Invalid unset value for column k", "UPDATE %s SET i = 0 WHERE k = ?", unset());
+         assertInvalidMessage("Invalid unset value for column k", "DELETE FROM %s WHERE k = ?", unset());
+-        assertInvalidMessage("Invalid unset value for argument in call to function blobasint", "SELECT * FROM %s WHERE k = blobAsInt(?)", unset());
++        assertInvalidMessage("Invalid unset value for argument in call to function blobasint",
++                "SELECT * FROM %s WHERE k = blobAsInt(?)", unset());
+     }
+ 
+-    @Test
+-    public void testInsertWithTtl() throws Throwable
+-    {
++    // @Test
++    public void testInsertWithTtl() throws Throwable {
+         createTable("CREATE TABLE %s (k int PRIMARY KEY, v int)");
+ 
+         // test with unset
+-        execute("INSERT INTO %s (k, v) VALUES (1, 1) USING TTL ?", unset()); // treat as 'unlimited'
+-        assertRows(execute("SELECT ttl(v) FROM %s"), row(new Object[]{ null }));
++        // execute("INSERT INTO %s (k, v) VALUES (1, 1) USING TTL ?", unset()); // treat
++        // as 'unlimited'
++        // assertRows(execute("SELECT ttl(v) FROM %s"), row(new Object[]{ null }));
+ 
+         // test with null
+         execute("INSERT INTO %s (k, v) VALUES (?, ?) USING TTL ?", 1, 1, null);
+@@ -67,163 +64,155 @@ public class InsertTest extends CQLTester
+ 
+         // test error handling
+         assertInvalidMessage("A TTL must be greater or equal to 0, but was -5",
+-                             "INSERT INTO %s (k, v) VALUES (?, ?) USING TTL ?", 1, 1, -5);
++                "INSERT INTO %s (k, v) VALUES (?, ?) USING TTL ?", 1, 1, -5);
+ 
+         assertInvalidMessage("ttl is too large.",
+-                             "INSERT INTO %s (k, v) VALUES (?, ?) USING TTL ?", 1, 1, Attributes.MAX_TTL + 1);
++                "INSERT INTO %s (k, v) VALUES (?, ?) USING TTL ?", 1, 1, Attributes.MAX_TTL + 1);
+     }
+ 
+-    @Test
+-    public void testInsert() throws Throwable
+-    {
++    // @Test
++    public void testInsert() throws Throwable {
+         testInsert(false);
+         testInsert(true);
+     }
+ 
+-    private void testInsert(boolean forceFlush) throws Throwable
+-    {
++    private void testInsert(boolean forceFlush) throws Throwable {
+         createTable("CREATE TABLE %s (partitionKey int," +
+-                                      "clustering int," +
+-                                      "value int," +
+-                                      " PRIMARY KEY (partitionKey, clustering))");
++                "clustering int," +
++                "value int," +
++                " PRIMARY KEY (partitionKey, clustering))");
+ 
+         execute("INSERT INTO %s (partitionKey, clustering) VALUES (0, 0)");
+         execute("INSERT INTO %s (partitionKey, clustering, value) VALUES (0, 1, 1)");
+         flush(forceFlush);
+ 
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(0, 0, null),
+-                   row(0, 1, 1));
++                row(0, 0, null),
++                row(0, 1, 1));
+ 
+         // Missing primary key columns
+         assertInvalidMessage("Some partition key parts are missing: partitionkey",
+-                             "INSERT INTO %s (clustering, value) VALUES (0, 1)");
++                "INSERT INTO %s (clustering, value) VALUES (0, 1)");
+         assertInvalidMessage("Some clustering keys are missing: clustering",
+-                             "INSERT INTO %s (partitionKey, value) VALUES (0, 2)");
++                "INSERT INTO %s (partitionKey, value) VALUES (0, 2)");
+ 
+         // multiple time the same value
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering, value, value) VALUES (0, 0, 2, 2)");
++                "INSERT INTO %s (partitionKey, clustering, value, value) VALUES (0, 0, 2, 2)");
+ 
+         // multiple time same primary key element in WHERE clause
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering, clustering, value) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering, clustering, value) VALUES (0, 0, 0, 2)");
+ 
+         // unknown identifiers
+         assertInvalidMessage("Undefined column name clusteringx",
+-                             "INSERT INTO %s (partitionKey, clusteringx, value) VALUES (0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clusteringx, value) VALUES (0, 0, 2)");
+ 
+         assertInvalidMessage("Undefined column name valuex",
+-                             "INSERT INTO %s (partitionKey, clustering, valuex) VALUES (0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering, valuex) VALUES (0, 0, 2)");
+     }
+ 
+-    @Test
+-    public void testInsertWithCompactFormat() throws Throwable
+-    {
++    // @Test
++    public void testInsertWithCompactFormat() throws Throwable {
+         testInsertWithCompactFormat(false);
+         testInsertWithCompactFormat(true);
+     }
+ 
+-    private void testInsertWithCompactFormat(boolean forceFlush) throws Throwable
+-    {
++    private void testInsertWithCompactFormat(boolean forceFlush) throws Throwable {
+         createTable("CREATE TABLE %s (partitionKey int," +
+-                                      "clustering int," +
+-                                      "value int," +
+-                                      " PRIMARY KEY (partitionKey, clustering)) WITH COMPACT STORAGE");
++                "clustering int," +
++                "value int," +
++                " PRIMARY KEY (partitionKey, clustering)) WITH COMPACT STORAGE");
+ 
+         execute("INSERT INTO %s (partitionKey, clustering, value) VALUES (0, 0, 0)");
+         execute("INSERT INTO %s (partitionKey, clustering, value) VALUES (0, 1, 1)");
+         flush(forceFlush);
+ 
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(0, 0, 0),
+-                   row(0, 1, 1));
++                row(0, 0, 0),
++                row(0, 1, 1));
+ 
+         // Invalid Null values for the clustering key or the regular column
+         assertInvalidMessage("Some clustering keys are missing: clustering",
+-                             "INSERT INTO %s (partitionKey, value) VALUES (0, 0)");
++                "INSERT INTO %s (partitionKey, value) VALUES (0, 0)");
+         assertInvalidMessage("Column value is mandatory for this COMPACT STORAGE table",
+-                             "INSERT INTO %s (partitionKey, clustering) VALUES (0, 0)");
++                "INSERT INTO %s (partitionKey, clustering) VALUES (0, 0)");
+ 
+         // Missing primary key columns
+         assertInvalidMessage("Some partition key parts are missing: partitionkey",
+-                             "INSERT INTO %s (clustering, value) VALUES (0, 1)");
++                "INSERT INTO %s (clustering, value) VALUES (0, 1)");
+ 
+         // multiple time the same value
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering, value, value) VALUES (0, 0, 2, 2)");
++                "INSERT INTO %s (partitionKey, clustering, value, value) VALUES (0, 0, 2, 2)");
+ 
+         // multiple time same primary key element in WHERE clause
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering, clustering, value) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering, clustering, value) VALUES (0, 0, 0, 2)");
+ 
+         // unknown identifiers
+         assertInvalidMessage("Undefined column name clusteringx",
+-                             "INSERT INTO %s (partitionKey, clusteringx, value) VALUES (0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clusteringx, value) VALUES (0, 0, 2)");
+ 
+         assertInvalidMessage("Undefined column name valuex",
+-                             "INSERT INTO %s (partitionKey, clustering, valuex) VALUES (0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering, valuex) VALUES (0, 0, 2)");
+     }
+ 
+-    @Test
+-    public void testInsertWithTwoClusteringColumns() throws Throwable
+-    {
++    // @Test
++    public void testInsertWithTwoClusteringColumns() throws Throwable {
+         testInsertWithTwoClusteringColumns(false);
+         testInsertWithTwoClusteringColumns(true);
+     }
+ 
+-    private void testInsertWithTwoClusteringColumns(boolean forceFlush) throws Throwable
+-    {
++    private void testInsertWithTwoClusteringColumns(boolean forceFlush) throws Throwable {
+         createTable("CREATE TABLE %s (partitionKey int," +
+-                    "clustering_1 int," +
+-                    "clustering_2 int," +
+-                    "value int," +
+-                    " PRIMARY KEY (partitionKey, clustering_1, clustering_2))");
++                "clustering_1 int," +
++                "clustering_2 int," +
++                "value int," +
++                " PRIMARY KEY (partitionKey, clustering_1, clustering_2))");
+ 
+         execute("INSERT INTO %s (partitionKey, clustering_1, clustering_2) VALUES (0, 0, 0)");
+         execute("INSERT INTO %s (partitionKey, clustering_1, clustering_2, value) VALUES (0, 0, 1, 1)");
+         flush(forceFlush);
+ 
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(0, 0, 0, null),
+-                   row(0, 0, 1, 1));
++                row(0, 0, 0, null),
++                row(0, 0, 1, 1));
+ 
+         // Missing primary key columns
+         assertInvalidMessage("Some partition key parts are missing: partitionkey",
+-                             "INSERT INTO %s (clustering_1, clustering_2, value) VALUES (0, 0, 1)");
++                "INSERT INTO %s (clustering_1, clustering_2, value) VALUES (0, 0, 1)");
+         assertInvalidMessage("Some clustering keys are missing: clustering_1",
+-                             "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 2)");
+ 
+         // multiple time the same value
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering_1, value, clustering_2, value) VALUES (0, 0, 2, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, value, clustering_2, value) VALUES (0, 0, 2, 0, 2)");
+ 
+         // multiple time same primary key element in WHERE clause
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering_1, clustering_1, clustering_2, value) VALUES (0, 0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, clustering_1, clustering_2, value) VALUES (0, 0, 0, 0, 2)");
+ 
+         // unknown identifiers
+         assertInvalidMessage("Undefined column name clustering_1x",
+-                             "INSERT INTO %s (partitionKey, clustering_1x, clustering_2, value) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1x, clustering_2, value) VALUES (0, 0, 0, 2)");
+ 
+         assertInvalidMessage("Undefined column name valuex",
+-                             "INSERT INTO %s (partitionKey, clustering_1, clustering_2, valuex) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, clustering_2, valuex) VALUES (0, 0, 0, 2)");
+     }
+ 
+-    @Test
+-    public void testInsertWithCompactStorageAndTwoClusteringColumns() throws Throwable
+-    {
++    // @Test
++    public void testInsertWithCompactStorageAndTwoClusteringColumns() throws Throwable {
+         testInsertWithCompactStorageAndTwoClusteringColumns(false);
+         testInsertWithCompactStorageAndTwoClusteringColumns(true);
+     }
+ 
+-    private void testInsertWithCompactStorageAndTwoClusteringColumns(boolean forceFlush) throws Throwable
+-    {
++    private void testInsertWithCompactStorageAndTwoClusteringColumns(boolean forceFlush) throws Throwable {
+         createTable("CREATE TABLE %s (partitionKey int," +
+-                                      "clustering_1 int," +
+-                                      "clustering_2 int," +
+-                                      "value int," +
+-                                      " PRIMARY KEY (partitionKey, clustering_1, clustering_2)) WITH COMPACT STORAGE");
++                "clustering_1 int," +
++                "clustering_2 int," +
++                "value int," +
++                " PRIMARY KEY (partitionKey, clustering_1, clustering_2)) WITH COMPACT STORAGE");
+ 
+         execute("INSERT INTO %s (partitionKey, clustering_1, value) VALUES (0, 0, 0)");
+         execute("INSERT INTO %s (partitionKey, clustering_1, clustering_2, value) VALUES (0, 0, 0, 0)");
+@@ -231,121 +220,121 @@ public class InsertTest extends CQLTester
+         flush(forceFlush);
+ 
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(0, 0, null, 0),
+-                   row(0, 0, 0, 0),
+-                   row(0, 0, 1, 1));
++                row(0, 0, null, 0),
++                row(0, 0, 0, 0),
++                row(0, 0, 1, 1));
+ 
+         // Invalid Null values for the clustering key or the regular column
+-        assertInvalidMessage("PRIMARY KEY column \"clustering_2\" cannot be restricted as preceding column \"clustering_1\" is not restricted",
+-                             "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 0)");
++        assertInvalidMessage(
++                "PRIMARY KEY column \"clustering_2\" cannot be restricted as preceding column \"clustering_1\" is not restricted",
++                "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 0)");
+         assertInvalidMessage("Column value is mandatory for this COMPACT STORAGE table",
+-                             "INSERT INTO %s (partitionKey, clustering_1, clustering_2) VALUES (0, 0, 0)");
++                "INSERT INTO %s (partitionKey, clustering_1, clustering_2) VALUES (0, 0, 0)");
+ 
+         // Missing primary key columns
+         assertInvalidMessage("Some partition key parts are missing: partitionkey",
+-                             "INSERT INTO %s (clustering_1, clustering_2, value) VALUES (0, 0, 1)");
+-        assertInvalidMessage("PRIMARY KEY column \"clustering_2\" cannot be restricted as preceding column \"clustering_1\" is not restricted",
+-                             "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 2)");
++                "INSERT INTO %s (clustering_1, clustering_2, value) VALUES (0, 0, 1)");
++        assertInvalidMessage(
++                "PRIMARY KEY column \"clustering_2\" cannot be restricted as preceding column \"clustering_1\" is not restricted",
++                "INSERT INTO %s (partitionKey, clustering_2, value) VALUES (0, 0, 2)");
+ 
+         // multiple time the same value
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering_1, value, clustering_2, value) VALUES (0, 0, 2, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, value, clustering_2, value) VALUES (0, 0, 2, 0, 2)");
+ 
+         // multiple time same primary key element in WHERE clause
+         assertInvalidMessage("The column names contains duplicates",
+-                             "INSERT INTO %s (partitionKey, clustering_1, clustering_1, clustering_2, value) VALUES (0, 0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, clustering_1, clustering_2, value) VALUES (0, 0, 0, 0, 2)");
+ 
+         // unknown identifiers
+         assertInvalidMessage("Undefined column name clustering_1x",
+-                             "INSERT INTO %s (partitionKey, clustering_1x, clustering_2, value) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1x, clustering_2, value) VALUES (0, 0, 0, 2)");
+ 
+         assertInvalidMessage("Undefined column name valuex",
+-                             "INSERT INTO %s (partitionKey, clustering_1, clustering_2, valuex) VALUES (0, 0, 0, 2)");
++                "INSERT INTO %s (partitionKey, clustering_1, clustering_2, valuex) VALUES (0, 0, 0, 2)");
+     }
+ 
+-    @Test
+-    public void testInsertWithAStaticColumn() throws Throwable
+-    {
++    // @Test
++    public void testInsertWithAStaticColumn() throws Throwable {
+         testInsertWithAStaticColumn(false);
+         testInsertWithAStaticColumn(true);
+     }
+ 
+-    private void testInsertWithAStaticColumn(boolean forceFlush) throws Throwable
+-    {
++    private void testInsertWithAStaticColumn(boolean forceFlush) throws Throwable {
+         createTable("CREATE TABLE %s (partitionKey int," +
+-                    "clustering_1 int," +
+-                    "clustering_2 int," +
+-                    "value int," +
+-                    "staticValue text static," +
+-                    " PRIMARY KEY (partitionKey, clustering_1, clustering_2))");
++                "clustering_1 int," +
++                "clustering_2 int," +
++                "value int," +
++                "staticValue text static," +
++                " PRIMARY KEY (partitionKey, clustering_1, clustering_2))");
+ 
+         execute("INSERT INTO %s (partitionKey, clustering_1, clustering_2, staticValue) VALUES (0, 0, 0, 'A')");
+         execute("INSERT INTO %s (partitionKey, staticValue) VALUES (1, 'B')");
+         flush(forceFlush);
+ 
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(1, null, null, "B", null),
+-                   row(0, 0, 0, "A", null));
++                row(1, null, null, "B", null),
++                row(0, 0, 0, "A", null));
+ 
+         execute("INSERT INTO %s (partitionKey, clustering_1, clustering_2, value) VALUES (1, 0, 0, 0)");
+         flush(forceFlush);
+         assertRows(execute("SELECT * FROM %s"),
+-                   row(1, 0, 0, "B", 0),
+-                   row(0, 0, 0, "A", null));
++                row(1, 0, 0, "B", 0),
++                row(0, 0, 0, "A", null));
+ 
+         // Missing primary key columns
+         assertInvalidMessage("Some partition key parts are missing: partitionkey",
+-                             "INSERT INTO %s (clustering_1, clustering_2, staticValue) VALUES (0, 0, 'A')");
++                "INSERT INTO %s (clustering_1, clustering_2, staticValue) VALUES (0, 0, 'A')");
+         assertInvalidMessage("Some clustering keys are missing: clustering_1",
+-                             "INSERT INTO %s (partitionKey, clustering_2, staticValue) VALUES (0, 0, 'A')");
++                "INSERT INTO %s (partitionKey, clustering_2, staticValue) VALUES (0, 0, 'A')");
+     }
+ 
+     @Test
+-    public void testInsertWithDefaultTtl() throws Throwable
+-    {
++    public void testInsertWithDefaultTtl() throws Throwable {
+         final int secondsPerMinute = 60;
+-        createTable("CREATE TABLE %s (a int PRIMARY KEY, b int) WITH default_time_to_live = " + (10 * secondsPerMinute));
++        createTable(
++                "CREATE TABLE %s (a int PRIMARY KEY, b int) WITH default_time_to_live = " + (10 * secondsPerMinute));
+ 
+-        execute("INSERT INTO %s (a, b) VALUES (1, 1)");
+-        UntypedResultSet resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 1");
+-        Assert.assertEquals(1, resultSet.size());
+-        Row row = resultSet.one();
+-        Assert.assertTrue(row.getInt("ttl(b)") >= (9 * secondsPerMinute));
++        // execute("INSERT INTO %s (a, b) VALUES (1, 1)");
++        // UntypedResultSet resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 1");
++        // Assert.assertEquals(1, resultSet.size());
++        // Row row = resultSet.one();
++        // Assert.assertTrue(row.getInt("ttl(b)") >= (9 * secondsPerMinute));
+ 
+         execute("INSERT INTO %s (a, b) VALUES (2, 2) USING TTL ?", (5 * secondsPerMinute));
+-        resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 2");
++        UntypedResultSet resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 2");
+         Assert.assertEquals(1, resultSet.size());
+-        row = resultSet.one();
+-        Assert.assertTrue(row.getInt("ttl(b)") <= (5 * secondsPerMinute));
+-
+-        execute("INSERT INTO %s (a, b) VALUES (3, 3) USING TTL ?", 0);
+-        assertRows(execute("SELECT ttl(b) FROM %s WHERE a = 3"), row(new Object[]{null}));
+-
+-        execute("INSERT INTO %s (a, b) VALUES (4, 4) USING TTL ?", unset());
+-        resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 4");
+-        Assert.assertEquals(1, resultSet.size());
+-        row = resultSet.one();
+-        Assert.assertTrue(row.getInt("ttl(b)") >= (9 * secondsPerMinute));
+-
+-        execute("INSERT INTO %s (a, b) VALUES (?, ?) USING TTL ?", 4, 4, null);
+-        assertRows(execute("SELECT ttl(b) FROM %s WHERE a = 4"), row(new Object[]{null}));
++        // row = resultSet.one();
++        // Assert.assertTrue(row.getInt("ttl(b)") <= (5 * secondsPerMinute));
++
++        // execute("INSERT INTO %s (a, b) VALUES (3, 3) USING TTL ?", 0);
++        // assertRows(execute("SELECT ttl(b) FROM %s WHERE a = 3"), row(new
++        // Object[]{null}));
++
++        // execute("INSERT INTO %s (a, b) VALUES (4, 4) USING TTL ?", unset());
++        // resultSet = execute("SELECT ttl(b) FROM %s WHERE a = 4");
++        // Assert.assertEquals(1, resultSet.size());
++        // row = resultSet.one();
++        // Assert.assertTrue(row.getInt("ttl(b)") >= (9 * secondsPerMinute));
++
++        // execute("INSERT INTO %s (a, b) VALUES (?, ?) USING TTL ?", 4, 4, null);
++        // assertRows(execute("SELECT ttl(b) FROM %s WHERE a = 4"), row(new
++        // Object[]{null}));
+     }
+ 
+-    @Test
+-    public void testPKInsertWithValueOver64K() throws Throwable
+-    {
++    // @Test
++    public void testPKInsertWithValueOver64K() throws Throwable {
+         createTable("CREATE TABLE %s (a text, b text, PRIMARY KEY (a, b))");
+ 
+         assertInvalidThrow(InvalidRequestException.class,
+-                           "INSERT INTO %s (a, b) VALUES (?, 'foo')", new String(TOO_BIG.array()));
++                "INSERT INTO %s (a, b) VALUES (?, 'foo')", new String(TOO_BIG.array()));
+     }
+ 
+-    @Test
+-    public void testCKInsertWithValueOver64K() throws Throwable
+-    {
++    // @Test
++    public void testCKInsertWithValueOver64K() throws Throwable {
+         createTable("CREATE TABLE %s (a text, b text, PRIMARY KEY (a, b))");
+ 
+         assertInvalidThrow(InvalidRequestException.class,
+-                           "INSERT INTO %s (a, b) VALUES ('foo', ?)", new String(TOO_BIG.array()));
++                "INSERT INTO %s (a, b) VALUES ('foo', ?)", new String(TOO_BIG.array()));
+     }
+ }

@@ -1,0 +1,84 @@
+{
+    "templateSource": "TraceSample1#method3",
+    "warnings": [],
+    "symMap": {
+        "$848": {
+            "symbolName": "$848",
+            "hashcode": 20,
+            "typeName": "java.lang.String",
+            "strVal": "20"
+        },
+        "$849": {
+            "symbolName": "$849",
+            "hashcode": 20,
+            "typeName": "java.lang.Integer",
+            "strVal": "20"
+        },
+        "$850": {
+            "symbolName": "$850",
+            "hashcode": 20,
+            "typeName": "edu.jhu.order.t2c.dynamic.RuntimeDetectionTest.ComplexObject",
+            "strVal": "{  \"x\": 3,  \"y\": \"4\",  \"file\": {    \"path\": \"./src/test/java/edu/jhu/order/t2c/dynamic/recipe/bad\"  }}"
+        }
+    },
+    "constraints": [],
+    "operations": [
+        {
+            "optypeStr": "cc",
+            "ifQueryOp": false,
+            "flag": "",
+            "opTree": {
+                "$0": "$848",
+                "$1": "$849",
+                "$2": "$850"
+            },
+            "symbolMap": {},
+            "customizedOpID": -1,
+            "sourceTestClassName": "-"
+        }
+    ],
+    "assertions": [
+        {
+            "assertType": "CUSTOMIZED",
+            "assertQueryOp": {
+                "optypeStr": "CUSTOMIZED",
+                "ifQueryOp": false,
+                "flag": "",
+                "opTree": {
+                    "arg0": "$848",
+                    "arg1": "$849",
+                    "arg2": "$850"
+                },
+                "symbolMap": {
+                    "$848": {
+                        "symbolName": "$848",
+                        "hashcode": 20,
+                        "typeName": "java.lang.String",
+                        "strVal": "20"
+                    },
+                    "$849": {
+                        "symbolName": "$849",
+                        "hashcode": 20,
+                        "typeName": "java.lang.Integer",
+                        "strVal": "20"
+                    },
+                    "$850": {
+                        "symbolName": "$850",
+                        "hashcode": 20,
+                        "typeName": "edu.jhu.order.t2c.dynamic.RuntimeDetectionTest.ComplexObject",
+                        "strVal": "{  \"x\": 3,  \"y\": \"4\",  \"file\": {    \"path\": \"./src/test/java/edu/jhu/order/t2c/dynamic/recipe/bad\"  }}"
+                    }
+                },
+                "customizedOpID": 2,
+                "sourceTestClassName": "edu.jhu.order.t2c.dynamic.AssertionPool"
+            },
+            "status": "NORMAL",
+            "lastTriggerOpHash": 0
+        }
+    ],
+    "triggerIndex": {
+        "1": [0]
+    },
+    "sysconfConstraints": [],
+    "verifyState": "INACTIVE"
+}

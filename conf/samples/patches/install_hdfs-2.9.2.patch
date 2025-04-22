@@ -1,0 +1,112 @@
+diff --git a/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh b/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
+index f1eb66b5507..df468141702 100644
+--- a/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
++++ b/hadoop-common-project/hadoop-common/src/main/conf/hadoop-env.sh
+@@ -69,6 +69,7 @@ export HADOOP_CLIENT_OPTS="$HADOOP_CLIENT_OPTS"
+ if [ "$HADOOP_HEAPSIZE" = "" ]; then
+   export HADOOP_CLIENT_OPTS="-Xmx512m $HADOOP_CLIENT_OPTS"
+ fi
++export HADOOP_OPTS="-Dt2c.mode=prod -Dconf=$CONF_PATH_MACRO -Dt2c.t2c_root_abs_path=$T2C_DIR_MACRO -Dt2c.target_system_abs_path=$SYS_DIR_MACRO"
+ #HADOOP_JAVA_PLATFORM_OPTS="-XX:-UsePerfData $HADOOP_JAVA_PLATFORM_OPTS"
+ 
+ # On secure datanodes, user to run the datanode as after dropping privileges.
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/pom.xml b/hadoop-hdfs-project/hadoop-hdfs/pom.xml
+index c6c89c0b097..d89d57c19b0 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/pom.xml
++++ b/hadoop-hdfs-project/hadoop-hdfs/pom.xml
+@@ -36,6 +36,12 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   </properties>
+ 
+   <dependencies>
++    <!--to compile after adding this entry, you need to run ./run_engine install conf/samples/hdfs-3.2.2.properties-->
++    <dependency>
++      <groupId>edu.jhu.order</groupId>
++      <artifactId>t2c</artifactId>
++      <version>1.0</version>
++    </dependency>
+     <dependency>
+       <groupId>org.apache.hadoop</groupId>
+       <artifactId>hadoop-annotations</artifactId>
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs b/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
+index b306698126c..150891072ab 100755
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/bin/hdfs
+@@ -142,7 +142,7 @@ if [ "$COMMAND" == "dfsrouter" ] && [ "$HADOOP_ROUTER_OPTS" != "" ]; then
+ fi
+ 
+ if [ "$COMMAND" = "namenode" ] ; then
+-  CLASS='org.apache.hadoop.hdfs.server.namenode.NameNode'
++  CLASS='edu.jhu.order.t2c.dynamicd.runtime.MainWrapper org.apache.hadoop.hdfs.server.namenode.NameNode'
+   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_NAMENODE_OPTS"
+ elif [ "$COMMAND" = "zkfc" ] ; then
+   CLASS='org.apache.hadoop.hdfs.tools.DFSZKFailoverController'
+@@ -151,7 +151,7 @@ elif [ "$COMMAND" = "secondarynamenode" ] ; then
+   CLASS='org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode'
+   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_SECONDARYNAMENODE_OPTS"
+ elif [ "$COMMAND" = "datanode" ] ; then
+-  CLASS='org.apache.hadoop.hdfs.server.datanode.DataNode'
++  CLASS='edu.jhu.order.t2c.dynamicd.runtime.MainWrapper org.apache.hadoop.hdfs.server.datanode.DataNode'
+   if [ "$starting_secure_dn" = "true" ]; then
+     HADOOP_OPTS="$HADOOP_OPTS -jvm server $HADOOP_DATANODE_OPTS"
+   else
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
+index d9655c7b96f..81138a77b6f 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataNode.java
+@@ -17,6 +17,8 @@
+  */
+ package org.apache.hadoop.hdfs.server.datanode;
+ 
++import edu.jhu.order.t2c.dynamicd.runtime.MarkedOpFunc;
++import edu.jhu.order.t2c.dynamicd.runtime.Operation;
+ 
+ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_ADDRESS_DEFAULT;
+ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_ADDRESS_KEY;
+@@ -1934,7 +1936,10 @@ private void checkBlockToken(ExtendedBlock block, Token<BlockTokenIdentifier> to
+    * This method can only be called by the offerService thread.
+    * Otherwise, deadlock might occur.
+    */
++    @MarkedOpFunc("shutdown")
+   public void shutdown() {
++    Operation.appendOp(Operation.createOperation("shutdownDataNode", this));
++
+     stopMetricsLogger();
+     if (plugins != null) {
+       for (ServicePlugin p : plugins) {
+@@ -2640,6 +2645,7 @@ public static DataNode createDataNode(String args[],
+    */
+   @VisibleForTesting
+   @InterfaceAudience.Private
++  @MarkedOpFunc("createDataNode")
+   public static DataNode createDataNode(String args[], Configuration conf,
+       SecureResources resources) throws IOException {
+     DataNode dn = instantiateDataNode(args, conf, resources);
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
+index 89571f4c7aa..59283e893d0 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNodeRpcServer.java
+@@ -30,6 +30,8 @@
+ import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.MAX_PATH_LENGTH;
+ import static org.apache.hadoop.util.Time.now;
+ 
++import edu.jhu.order.t2c.dynamicd.runtime.MarkedOpFunc;
++
+ import java.io.FileNotFoundException;
+ import java.io.IOException;
+ import java.net.InetSocketAddress;
+@@ -717,6 +719,7 @@ public FsServerDefaults getServerDefaults() throws IOException {
+   }
+ 
+   @Override // ClientProtocol
++  @MarkedOpFunc("create")
+   public HdfsFileStatus create(String src, FsPermission masked,
+       String clientName, EnumSetWritable<CreateFlag> flag,
+       boolean createParent, short replication, long blockSize, 
+@@ -1083,6 +1086,7 @@ private boolean checkPathLength(String src) {
+   }
+     
+   @Override // ClientProtocol
++  @MarkedOpFunc("mkdirs")
+   public boolean mkdirs(String src, FsPermission masked, boolean createParent)
+       throws IOException {
+     checkNNStartup();

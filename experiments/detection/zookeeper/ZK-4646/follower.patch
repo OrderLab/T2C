@@ -1,0 +1,54 @@
+diff --git a/zookeeper-server/src/main/java/org/apache/zookeeper/server/SyncRequestProcessor.java b/zookeeper-server/src/main/java/org/apache/zookeeper/server/SyncRequestProcessor.java
+index 7c5e5ef66..965401158 100644
+--- a/zookeeper-server/src/main/java/org/apache/zookeeper/server/SyncRequestProcessor.java
++++ b/zookeeper-server/src/main/java/org/apache/zookeeper/server/SyncRequestProcessor.java
+@@ -28,6 +28,8 @@
+ import java.util.concurrent.Semaphore;
+ import java.util.concurrent.ThreadLocalRandom;
+ import java.util.concurrent.TimeUnit;
++
++import org.apache.zookeeper.ZooDefs.OpCode;
+ import org.apache.zookeeper.common.Time;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+@@ -174,6 +176,10 @@ public void run() {
+                     break;
+                 }
+ 
++                if (si.type == OpCode.create) {
++                    Thread.sleep(50000);
++                }
++
+                 long startProcessTime = Time.currentElapsedTime();
+                 ServerMetrics.getMetrics().SYNC_PROCESSOR_QUEUE_TIME.add(startProcessTime - si.syncQueueStartTime);
+ 
+diff --git a/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FollowerZooKeeperServer.java b/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FollowerZooKeeperServer.java
+index 8d371ae57..ae19498f6 100644
+--- a/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FollowerZooKeeperServer.java
++++ b/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FollowerZooKeeperServer.java
+@@ -23,6 +23,7 @@
+ import java.util.concurrent.LinkedBlockingQueue;
+ import javax.management.JMException;
+ import org.apache.jute.Record;
++import org.apache.zookeeper.ZooDefs.OpCode;
+ import org.apache.zookeeper.jmx.MBeanRegistry;
+ import org.apache.zookeeper.metrics.MetricsContext;
+ import org.apache.zookeeper.server.ExitCode;
+@@ -106,8 +107,15 @@ public void commit(long zxid) {
+             ServiceUtils.requestSystemExit(ExitCode.UNMATCHED_TXN_COMMIT.getValue());
+         }
+         Request request = pendingTxns.remove();
+-        request.logLatency(ServerMetrics.getMetrics().COMMIT_PROPAGATION_LATENCY);
+-        commitProcessor.commit(request);
++        try {
++            if(request.type == OpCode.create){
++                throw new Exception("Skip committing create");
++            }
++            request.logLatency(ServerMetrics.getMetrics().COMMIT_PROPAGATION_LATENCY);
++            commitProcessor.commit(request);
++        } catch (Exception e) {
++            LOG.info(e.getMessage());
++        }
+     }
+ 
+     public synchronized void sync() {

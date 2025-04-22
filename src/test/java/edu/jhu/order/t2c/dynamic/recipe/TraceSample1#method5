@@ -1,0 +1,49 @@
+{
+    "templateSource": "TraceSample1#method5",
+    "warnings": [],
+    "symMap": {
+        "$849": {
+            "symbolName": "$849",
+            "hashcode": 1,
+            "typeName": "java.lang.Integer",
+            "strVal": "8"
+        }
+    },
+    "constraints": [],
+    "operations": [
+        {
+            "optypeStr": "ee",
+            "ifQueryOp": false,
+            "flag": "",
+            "opTree": {
+                "$0": "$848"
+            },
+            "symbolMap": {},
+            "customizedOpID": -1,
+            "sourceTestClassName": "-"
+        }
+    ],
+    "assertions": [
+        {
+            "assertType": "CUSTOMIZED",
+            "assertQueryOp": {
+                "optypeStr": "CUSTOMIZED",
+                "ifQueryOp": false,
+                "flag": "",
+                "opTree": {
+                    "arg0": "$849"
+                },
+                "symbolMap": {},
+                "customizedOpID": 3,
+                "sourceTestClassName": "edu.jhu.order.t2c.dynamic.AssertionPool"
+            },
+            "status": "NORMAL",
+            "lastTriggerOpHash": 0
+        }
+    ],
+    "triggerIndex": {
+        "1": [0]
+    },
+    "sysconfConstraints": [],
+    "verifyState": "INACTIVE"
+}

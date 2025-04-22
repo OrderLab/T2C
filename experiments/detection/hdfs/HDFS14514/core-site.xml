@@ -1,0 +1,13 @@
+<configuration>
+
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://localhost:9000</value>
+</property>
+
+<property>
+<name>hadoop.security.key.provider.path</name>
+<value>kms://http@localhost:16000/kms</value>
+</property>
+
+</configuration>

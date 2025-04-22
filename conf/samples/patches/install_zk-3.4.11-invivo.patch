@@ -1,0 +1,56 @@
+diff --git a/bin/zkEnv.sh b/bin/zkEnv.sh
+index 43cbc2235..47b42af8c 100755
+--- a/bin/zkEnv.sh
++++ b/bin/zkEnv.sh
+@@ -101,6 +101,8 @@ done
+ 
+ #make it work for developers
+ CLASSPATH="$ZOOBINDIR/../build/classes:$CLASSPATH"
++#CHANG: load testing classes at runtime
++CLASSPATH="$ZOOBINDIR/../build/test/classes:$CLASSPATH"
+ 
+ case "`uname`" in
+     CYGWIN*) cygwin=true ;;
+@@ -112,4 +114,4 @@ then
+     CLASSPATH=`cygpath -wp "$CLASSPATH"`
+ fi
+ 
+-#echo "CLASSPATH=$CLASSPATH"
+\ No newline at end of file
++#echo "CLASSPATH=$CLASSPATH"
+diff --git a/bin/zkServer.sh b/bin/zkServer.sh
+index 51dbe9f58..3bfe4ed9b 100755
+--- a/bin/zkServer.sh
++++ b/bin/zkServer.sh
+@@ -34,6 +34,7 @@ else
+   . "$ZOOBINDIR/zkEnv.sh"
+ fi
+ 
++JMXDISABLE="true"
+ # See the following page for extensive details on setting
+ # up the JVM to accept JMX remote management:
+ # http://java.sun.com/javase/6/docs/technotes/guides/management/agent.html
+@@ -137,8 +138,9 @@ start)
+          exit 0
+       fi
+     fi
++    T2CFLAGS="-Dt2c.mode=invivo -Dconf=CONF_PATH_MACRO -Dt2c.t2c_root_abs_path=T2C_DIR_MACRO -Dt2c.target_system_abs_path=SYS_DIR_MACRO"
+     nohup "$JAVA" "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}" \
+-    -cp "$CLASSPATH" $JVMFLAGS $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
++    -cp "$CLASSPATH" $JVMFLAGS $T2CFLAGS edu.jhu.order.t2c.dynamicd.runtime.MainWrapper $ZOOMAIN "$ZOOCFG" > "$_ZOO_DAEMON_OUT" 2>&1 < /dev/null &
+     if [ $? -eq 0 ]
+     then
+       case "$OSTYPE" in
+diff --git a/build.xml b/build.xml
+index 7384aa836..8e4be74c6 100644
+--- a/build.xml
++++ b/build.xml
+@@ -381,7 +381,7 @@ xmlns:cs="antlib:com.puppycrawl.tools.checkstyle">
+     
+     <target name="build-generated" depends="compile_jute,version-info,ivy-retrieve" >
+         <javac srcdir="${src_generated.dir}" destdir="${build.classes}" includeantruntime="false"
+-            target="${javac.target}" source="${javac.source}" debug="on" classpath="${ivy.lib}/audience-annotations-${audience-annotations.version}.jar" />
++            target="${javac.target}" source="${javac.source}" debug="on" classpath="T2C_DIR_MACRO/target/t2c-1.0-SNAPSHOT-jar-with-dependencies.jar:${ivy.lib}/audience-annotations-${audience-annotations.version}.jar" />
+     </target>
+     
+     <target name="ivy-download" unless="ivy.jar.exists" depends="init">

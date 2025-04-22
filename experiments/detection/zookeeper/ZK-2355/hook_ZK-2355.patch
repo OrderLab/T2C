@@ -1,0 +1,54 @@
+diff --git a/src/java/main/org/apache/zookeeper/server/quorum/Learner.java b/src/java/main/org/apache/zookeeper/server/quorum/Learner.java
+index 088d4a4c..0db0424c 100644
+--- a/src/java/main/org/apache/zookeeper/server/quorum/Learner.java
++++ b/src/java/main/org/apache/zookeeper/server/quorum/Learner.java
+@@ -51,6 +51,8 @@
+ import org.apache.zookeeper.txn.SetDataTxn;
+ import org.apache.zookeeper.txn.TxnHeader;
+ 
++import java.net.SocketTimeoutException;
++import java.io.File;
+ /**
+  * This class is the superclass of two of the three main actors in a ZK
+  * ensemble: Followers and Observers. Both Followers and Observers share 
+@@ -143,6 +145,15 @@ void writePacket(QuorumPacket pp, boolean flush) throws IOException {
+         }
+     }
+ 
++    boolean fineGrainedError = false;
++
++    static boolean ifFaultInjected(String faultID) {
++        boolean result = new File("./fault." + faultID).isFile();
++        if (result)
++            System.out.println("CHANG: fault " + faultID + "triggered!");
++        return result;
++    }
++
+     /**
+      * read a packet from the leader
+      *
+@@ -154,6 +165,14 @@ void readPacket(QuorumPacket pp) throws IOException {
+         synchronized (leaderIs) {
+             leaderIs.readRecord(pp, "packet");
+         }
++
++        if (ifFaultInjected("ZK-2355") && fineGrainedError && pp.getType() == Leader.PROPOSAL) {
++            String type = LearnerHandler.packetToString(pp);
++            throw new SocketTimeoutException(
++                    "Socket timeout while reading the packet for operation "
++                            + type);
++        }
++
+         long traceMask = ZooTrace.SERVER_PACKET_TRACE_MASK;
+         if (pp.getType() == Leader.PING) {
+             traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
+@@ -361,7 +380,9 @@ protected void syncWithLeader(long newLeaderZxid) throws Exception{
+         // In the DIFF case we don't need to do a snapshot because the transactions will sync on top of any existing snapshot
+         // For SNAP and TRUNC the snapshot is needed to save that history
+         boolean snapshotNeeded = true;
++        fineGrainedError = false;
+         readPacket(qp);
++        fineGrainedError = true;
+         LinkedList<Long> packetsCommitted = new LinkedList<Long>();
+         LinkedList<PacketInFlight> packetsNotCommitted = new LinkedList<PacketInFlight>();
+         synchronized (zk) {
