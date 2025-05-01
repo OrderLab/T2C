@@ -725,7 +725,7 @@ public class CheckerTemplate {
     }
 
     public static void match(EventList<Operation> traces, List<CheckerTemplate> candidates, List<Operation> matched, HashSet<Integer> matched_traces, Map<Integer, List<Operation>> matchedCheckers, Map<String, Symbol> updatedMap, Map<CheckerTemplate.TemplateWithMap, Integer> retMap) {
-        T2CHelper.prodLogInfo("Try matching with "+candidates.size()+" templates, trace size is "+ traces.size());
+        // T2CHelper.prodLogInfo("Try matching with "+candidates.size()+" templates, trace size is "+ traces.size());
         //by default the strategy returns all matched templates
         for (CheckerTemplate template : candidates) {
             if(!template.checkSystemConfigConstraints())
