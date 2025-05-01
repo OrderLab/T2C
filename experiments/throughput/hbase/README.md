@@ -2,6 +2,8 @@ This is a brief instruction for HBase throughput evaluation in a 5-node cluster.
 
 ### Prerequisites
 
+We assume you have generated checkers for hbase on all nodes. Also, replace `hbase_path` in install_master_node.sh, install_other_node.sh, and throughput.sh with your hbase path
+
 #### JDK Version
 
 `java-8-openjdk-amd64` is used in this experiment. Other versions of java may also work, but you need to change configuration of `JAVA_HOME` in `hbase-env.sh` and  `hadoop-env.sh`

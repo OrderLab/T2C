@@ -306,8 +306,7 @@ Note that the templates_in folder should only contain the templates from inv_ver
 ##### 8.2.3 HDFS
 ```
 ./bin/hdfs namenode -format
-./sbin/hadoop-daemon.sh start namenode
-./sbin/hadoop-daemon.sh start datanode
+./sbin/start-dfs.sh
 ```
 ##### 8.2.4 HBase
 ```
@@ -323,8 +322,8 @@ FailMap: {org.apache.zookeeper.test.SaslAuthDesignatedClientTest#testSaslConfig-
 ```
 
 ### 9. Evaluation
-Evaluation cases readme are in this experiments [README](/experiments/README.md).
+Evaluation cases readme are in this experiments [README](/experiments/README.md). This readme will guide you to install additional tools required to run the experiments. For these evaluations, we recommend starting from detecting ZK-1208 and HDFS-14699, then continue with false positive, and then ends with throughput and overhead. For false positive, throughput, and overhead baseline experiments, you can do it by running the system on the same version but without applying T2C on it.
 1. [experiments/detection](/experiments/detection/README.md) folder contains the bug detection evaluation
-2. [experiments/throughput](/experiments/throughput) folder contains the throughput evaluation
-3. [experiments/false_positive](/experiments/false_positive/README.md) folder contains the false positive evaluation
+2. [experiments/false_positive](/experiments/false_positive/README.md) folder contains the false positive evaluation
+3. [experiments/throughput](/experiments/throughput/README.md) folder contains the throughput evaluation
 4. [experiments/overhead](/experiments/overhead/README.md) folder contains the overhead evaluation

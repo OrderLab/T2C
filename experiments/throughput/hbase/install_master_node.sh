@@ -1,10 +1,10 @@
 script_path=$(cd "$(dirname "$0")" && pwd)
 hbase_path=/localtmp/hbase
-hdfs_path=/localtmp/hdfs
+hdfs_path=~/hdfs_for_hbase
 
 echo "script_path: $script_path"
 cd ~
-echo "#### installing hbase-2.4.0 in /localtmp/hbase"
+# echo "#### installing hbase-2.4.0 in /localtmp/hbase"
 # wget https://archive.apache.org/dist/hbase/2.4.0/hbase-2.4.0-src.tar.gz || exit
 # tar -xzf hbase-2.4.0-src.tar.gz || exit
 # rm hbase-2.4.0-src.tar.gz
@@ -14,11 +14,9 @@ cp -f ./hbase-env.sh ./hbase-site.xml ./regionservers $hbase_path/conf/ || exit
 cd $hbase_path
 mvn package -DskipTests
 
-echo "#### installing hadoop in ~/hadoop_for_hbase/hadoop-3.2.2-src"
-# mkdir -p ~/hadoop_for_hbase && cd ~/hadoop_for_hbase
-# wget https://archive.apache.org/dist/hadoop/common/hadoop-3.2.2/hadoop-3.2.2-src.tar.gz || exit
-# tar -zxf hadoop-3.2.2-src.tar.gz || exit
-# rm hadoop-3.2.2-src.tar.gz
+echo "#### installing hadoop in ~/hdfs_for_hbase"
+git clone https://github.com/apache/hadoop.git hdfs_for_hbase
+cd hdfs_for_hbase && git checkout rel/release-3.2.2
 
 cd "$script_path"
 cp -f ./hdfs-site.xml $hdfs_path/hadoop-hdfs-project/hadoop-hdfs/src/main/conf

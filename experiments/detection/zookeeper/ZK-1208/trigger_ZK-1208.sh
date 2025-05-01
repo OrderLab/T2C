@@ -1,7 +1,4 @@
 cd ~/zookeeper
-bin/zkServer.sh stop
-rm -rf ~/fuser/zookeeper/version-2
-sleep 2
 
 bin/zkServer.sh start
 sleep 2

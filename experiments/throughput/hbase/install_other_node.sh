@@ -1,6 +1,6 @@
 script_path=$(cd "$(dirname "$0")" && pwd)
 hbase_path=/localtmp/hbase
-hdfs_path=/localtmp/hdfs
+hdfs_path=~/hdfs_for_hbase
 
 echo "script_path: $script_path"
 cd ~

@@ -1,5 +1,9 @@
 This is a brief instruction for cassandra throughput evaluation in a 5-node cluster.
 
+### Preparation
+
+We assume you have generated checkers for cassandra on all nodes, and they are in `~/cassandra`. For baseline purpose, you can uncomment the lines in install.sh
+
 ### Install
 
 Fist run `install.sh` in **every node**.

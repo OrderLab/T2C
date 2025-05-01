@@ -1,13 +1,13 @@
 script_path=$(cd "$(dirname "$0")" && pwd)
 hbase_path=/localtmp/hbase
-hdfs_path=/localtmp/hdfs
+hdfs_path=~/hdfs_for_hbase
 
 # HADOOP_COMMON_HOME=$hdfs_path/hadoop-dist/target/hadoop-3.2.2/
 # cd /home/dimas/T2C-EvalAutomatons/throughput_eval/hbase/
 echo "script_path: $script_path"
 cd $hbase_path
 ./bin/start-hbase.sh
-# sleep 10
+sleep 10
 # echo "status" | ./bin/hbase shell
 # cd /home/dimas/T2C-EvalAutomatons/throughput_eval/hbase/
 # cd $hbase_path

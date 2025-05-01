@@ -54,12 +54,15 @@ cd $t2c_dir
 
 # use build output as validate input
 cp -r $hdfs_dir/templates_out/ $hdfs_dir/templates_in/
+cp -r $hdfs_dir/templates_in/ ~/templates_in/
 
 # validate checkers
 ./run_engine.sh validate conf/samples/hdfs-2.9.2.properties
 
 # copy valid checkers to  ~ for hdfs
-cp -r $t2c_dir/inv_verify_output/templates_in ~
+rm -rf ~/templates_in
+cp -r $t2c_dir/inv_verify_output/verified_inv_dir ~
+mv ~/verified_inv_dir ~/templates_in
 ```
 ### 3. Bug Detection
 #### 3.1. Run hdfs

@@ -44,7 +44,7 @@ Table of Contents
 ## Requirements
 
 * OS and JDK:
-    - T2C is developed and tested under **Ubuntu 18.04/20.04** and **JDK 8**.
+    - T2C is developed and tested under **Ubuntu 20.04/22.04** and **JDK 8**.
     - Other systems and newer JDKs may also work. We tested a few functionalities 
       on macOS Catalina (10.15.7) and Ventura (13.5.2) but the correctness is not guaranteed.
 
@@ -74,6 +74,9 @@ echo export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> ~/.bashrc
 
 ### 1. [Pre] Clone the T2C repository
 
+> [!TIP]  
+> Run this step on all nodes if you're using parallel mode
+
 To clone from github:
 
 ```bash
@@ -82,6 +85,9 @@ git clone https://github.com/OrderLab/T2C.git
 
 
 ### 2. [Pre] Build T2C (~3 min)
+
+> [!TIP]  
+> Run this step on all nodes if you're using parallel mode
 
 T2C uses Maven for project management.
 
@@ -92,6 +98,9 @@ cd T2C && ./run_engine.sh compile
 ```
 
 ### 3. [Pre] Customize configurations (~1 min)
+
+> [!TIP]  
+> Run this step on all nodes if you're using parallel mode
 
 A configuration is needed to specify the basic information about the target system.
 We have already prepared a list of configurations for common
@@ -132,6 +141,9 @@ the target system.
 
 ### 4. [Pre] Clone, patch and build the target system (~5 min)
 
+> [!TIP]  
+> Run this step on all nodes if you're using parallel mode
+
 #### 4.1 Clone the target system
 
 Clone the Git repository for the target system. We
@@ -163,6 +175,9 @@ stage.
 
 ### 5. [Offline] Retrofit test case classes (~3 min)
 
+> [!TIP]  
+> Run this step on all nodes if you're using parallel mode
+
 ```bash
 ./run_engine.sh retrofit conf/samples/zk-3.4.11.properties 
 ```
@@ -180,9 +195,8 @@ section to revert the .
 
 ### 6. [Offline] Execute tests and generate checker templates (~45min on 5 nodes)
 > [!TIP]  
-> If you only want to detect ZK-1208, you can limit the checker generation by modifying the properties file with
-> `specified_test_class_list=org.apache.zookeeper.server.quorum.EphemeralNodeDeletionTest`  
-> It will reduce the time taken to <1min
+> For very short demo purpose, you can specify which tests to extract templates from by specifying `org.apache.zookeeper.test.SessionTest` in   
+> zk-3.4.11.properties. It will reduce the time taken to <1min even in single node mode
 
 ```bash
 # You might want to run this command in tmux to prevent it being cancelled accidentally
@@ -305,7 +319,7 @@ cd <T2C>
 ./run_engine.sh retrofit conf/samples/zk-3.4.11.properties 
 
 # Create zookeeper config
-cp <T2C-EvalAutomaton>/detection/zookeeper/ZK-1208/zoo.cfg <system_path>/conf
+cp <T2C>/experiments/detection/zookeeper/ZK-1208/zoo.cfg <system_path>/conf
 echo dataDir=<system_path> >> <system_path>/conf/zoo.cfg
 ```
 
@@ -317,7 +331,7 @@ cd <system_path>
 
 And trigger the bug
 ```
-<T2C-EvalAutomaton>/detection/zookeeper/ZK-1208/ZK-1208.sh
+<T2C>/experiments/detection/zookeeper/ZK-1208/ZK-1208.sh
 ```
 
 #### 8.3 Check detection results
@@ -327,5 +341,3 @@ The checking result will be printed to stdout (or redirected to logs depending o
 SuccessMap: {org.apache.zookeeper.test.QuorumQuotaTest#testQuotaWithQuorum-270=396, org.apache.zookeeper.test.QuorumQuotaTest#testQuotaWithQuorum-271=393, org.apache.zookeeper.server.ZooKeeperServerMainTest#testJMXRegistrationWithNIO-374=2, org.apache.zookeeper.test.ZooKeeperQuotaTest#testQuota-359=393, org.apache.zookeeper.test.ClientPortBindTest#testBindByAddress-438=1, org.apache.zookeeper.test.GetChildren2Test#testChild-469=385, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursiveAsync-191=387, org.apache.zookeeper.test.GetChildren2Test#testChild-471=382, org.apache.zookeeper.test.StatTest#testChildren-19=2526, org.apache.zookeeper.test.GetChildren2Test#testChild-473=388, org.apache.zookeeper.test.StatTest#testChildren-17=2540, org.apache.zookeeper.test.WatcherFuncTest#testExistsSync-455=175, org.apache.zookeeper.test.StatTest#testChildren-15=2535, org.apache.zookeeper.test.WatcherFuncTest#testExistsSync-454=175, org.apache.zookeeper.server.ZooKeeperServerMainTest#testStandalone-372=1, org.apache.zookeeper.test.WatcherTest#testWatcherAutoResetDisabledWithLocal-54=309, org.apache.zookeeper.test.GetChildren2Test#testChildren-478=2548, org.apache.zookeeper.server.quorum.auth.QuorumDigestAuthTest#testRelectionWithValidCredentials-31=1, org.apache.zookeeper.test.GetChildren2Test#testChildren-476=2581, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursive-185=392, org.apache.zookeeper.test.GetChildren2Test#testChildren-474=2612, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursive-186=387, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursive-187=396, org.apache.zookeeper.server.ZooKeeperServerMainTest#testJMXRegistrationWithNetty-374=1, org.apache.zookeeper.test.StatTest#testDataSizeChange-24=380, org.apache.zookeeper.test.StatTest#testDataSizeChange-23=384, org.apache.zookeeper.test.QuorumQuotaTest#testQuotaWithQuorum-268=391, org.apache.zookeeper.test.QuorumQuotaTest#testQuotaWithQuorum-269=388, org.apache.zookeeper.test.StatTest#testDataSizeChange-22=389, org.apache.zookeeper.test.StatTest#testDataSizeChange-21=392, org.apache.zookeeper.test.StatTest#testDataSizeChange-20=389, org.apache.zookeeper.test.MaxCnxnsTest#testMaxCnxns-616=389, org.apache.zookeeper.test.StatTest#testBasic-5=385, org.apache.zookeeper.test.QuorumZxidSyncTest#testLateLogs-101=389, org.apache.zookeeper.test.StatTest#testBasic-9=392, org.apache.zookeeper.test.StatTest#testBasic-8=393, org.apache.zookeeper.test.StatTest#testBasic-7=388, org.apache.zookeeper.test.StatTest#testBasic-6=387, org.apache.zookeeper.server.ZooKeeperServerMainTest#testNonRecoverableError-370=1, org.apache.zookeeper.test.SessionInvalidationTest#testCreateAfterCloseShouldFail-262=389, org.apache.zookeeper.server.SessionTrackerTest#testCloseSessionRequestAfterSessionExpiry-236=1, org.apache.zookeeper.server.PrepRequestProcessorTest#testMultiOutstandingChange-109=218, org.apache.zookeeper.server.PrepRequestProcessorTest#testMultiOutstandingChange-108=218, org.apache.zookeeper.test.SaslAuthFailNotifyTest#testBadSaslAuthNotifiesWatch-479=398, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursiveAsync-189=400, org.apache.zookeeper.test.ZooKeeperQuotaTest#testQuota-362=390, org.apache.zookeeper.test.ZooKeeperQuotaTest#testQuota-361=388, org.apache.zookeeper.test.ZooKeeperQuotaTest#testQuota-360=387, org.apache.zookeeper.test.WatcherTest#testWatcherAutoResetDisabledWithGlobal-54=333, org.apache.zookeeper.test.StatTest#testChild-14=382, org.apache.zookeeper.ZooKeeperTest#testDeleteRecursiveAsync-190=396, org.apache.zookeeper.test.StatTest#testChild-12=379, org.apache.zookeeper.test.StatTest#testChild-10=389, org.apache.zookeeper.server.ZooKeeperServerMainTest#testAutoCreateDataLogDir-373=1, org.apache.zookeeper.test.ChrootTest#testChrootSynchronous-390=394, org.apache.zookeeper.test.SaslAuthDesignatedServerTest#testAuth-330=388}
 FailMap: {org.apache.zookeeper.test.SaslAuthDesignatedClientTest#testSaslConfig-367=402, org.apache.zookeeper.server.InvalidSnapCountTest#testInvalidSnapCount-828=1}
 ```
-
-For ZK-1208, the bug is detected by `SessionTest`

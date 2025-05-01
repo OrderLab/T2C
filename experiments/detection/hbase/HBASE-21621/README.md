@@ -52,7 +52,8 @@ cp -r $hbase_dir/templates_out/ $hbase_dir/templates_in/
 
 # copy valid checkers
 rm -rf $hbase_dir/templates_in/
-cp -r $t2c_dir/inv_verify_output/templates_in $hbase_dir
+cp -r $t2c_dir/inv_verify_output/verified_inv_dir $hbase_dir
+mv $hbase_dir/verified_inv_dir  $hbase_dir/templates_in/
 ```
 ### 3. Bug Detection
 #### 3.1. Run hbase

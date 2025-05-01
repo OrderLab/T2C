@@ -10,7 +10,7 @@
 ## With T2C
 ### 1. Preparation
 #### 1.1. Modify t2c config
-In <t2c_dir>/conf/samples/zk-3.4.11.properties, modify `system_dir_path` to the zookeeper folder absolute path, and modify `patch_path` to `${t2c_dir}/conf/samples/patches/install_zk-1208.patch`
+In <t2c_dir>/conf/samples/zk-3.4.11.properties, modify `system_dir_path` to the zookeeper folder absolute path
 
 #### 1.2. Apply patch
 ```
@@ -56,11 +56,29 @@ cp -r $zookeeper_dir/templates_out/ $zookeeper_dir/templates_in/
 
 # copy valid checkers
 rm -rf $zookeeper_dir/templates_in/
-cp -r $t2c_dir/inv_verify_output/templates_in $zookeeper_dir
+cp -r $t2c_dir/inv_verify_output/verified_inv_dir $zookeeper_dir
+mv $zookeeper_dir/verified_inv_dir  $zookeeper_dir/templates_in/
 ```
 ### 3. Bug Detection
+#### 3.1. Apply additional patch
+```
+# reset zookeeper to original
+cd <system_path>
+git reset --hard
+
+# Modify patch_path to `conf/samples/patches/install_zk-1208.patch`
+cd <T2C>
+vim conf/samples/zk-3.4.11.properties 
+
+# Compile and prepare modified zookeeper
+cd <T2C>
+./run_engine.sh patch conf/samples/zk-3.4.11.properties zookeeper
+./run_engine.sh recover_tests conf/samples/zk-3.4.11.properties
+./run_engine.sh retrofit conf/samples/zk-3.4.11.properties 
+```
 #### 3.1. Run Zookeeper
 ```
+# dont forget to change zk dir in the script
 cd $script_dir
 ./trigger_ZK-1208.sh <zk_absolute_path>
 ```

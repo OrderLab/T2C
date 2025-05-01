@@ -56,14 +56,14 @@ Refer to [CS-14873 guide](cassandra/CASSANDRA-14873/README.md)
 Refer to [CS-15072 guide](cassandra/CASSANDRA-15072/README.md)
 
 ### 1.3 HDFS
-#### 1.3.1 HDFS-16942
-Refer to [HDFS-16942 guide](hdfs/HDFS16942/README.md)
-#### 1.3.2 HDFS-16633
-Refer to [HDFS-16633 guide](hdfs/HDFS16633/README.md)
-#### 1.3.3 HDFS-14514
-Refer to [HDFS-14514 guide](hdfs/HDFS14514/README.md)
-#### 1.3.4 HDFS-14699
+#### 1.3.1 HDFS-14699
 Refer to [HDFS-14699 guide](hdfs/HDFS14699/README.md)
+#### 1.3.2 HDFS-16942
+Refer to [HDFS-16942 guide](hdfs/HDFS16942/README.md)
+#### 1.3.3 HDFS-16633
+Refer to [HDFS-16633 guide](hdfs/HDFS16633/README.md)
+#### 1.3.4 HDFS-14514
+Refer to [HDFS-14514 guide](hdfs/HDFS14514/README.md)
 
 ### 1.4 HBase
 #### 1.4.1 HBase-21644

@@ -65,6 +65,13 @@ public class TemplateManager {
                     else{
                         currentTemplate.triggerIndex.get(index).add(i);
                     }
+                    try {
+                        if(!currentTemplate.operations.get(index-1).relatedAssertions.contains(currentTemplate.assertions.get(i).assertionLocation)){
+                            currentTemplate.operations.get(index-1).relatedAssertions.add(currentTemplate.assertions.get(i).assertionLocation);
+                        }
+                    } catch (Exception e) {
+                        // TODO: handle exception
+                    }
                     break;
                  }
              }

@@ -22,8 +22,6 @@ version=3.1.2
 cd $hdfs_dir
 # checkout to buggy version of hdfs
 git checkout tags/rel/release-3.1.2
-# apply failure-specific patch
-git apply $script_dir/hook_HDFS-16633.patch
 
 cd $t2c_dir
 
@@ -56,21 +54,42 @@ cd $t2c_dir
 
 # use build output as validate input
 cp -r $hdfs_dir/templates_out/ $hdfs_dir/templates_in/
+cp -r $hdfs_dir/templates_in/ ~/templates_in/
 
 # validate checkers
 ./run_engine.sh validate conf/samples/hdfs-3.1.3.properties
 
 # copy valid checkers to  ~ for hdfs
-cp -r $t2c_dir/inv_verify_output/templates_in ~
+rm -rf ~/templates_in
+cp -r $t2c_dir/inv_verify_output/verified_inv_dir ~
+mv ~/verified_inv_dir ~/templates_in
 ```
 ### 3. Bug Detection
-#### 3.1. Run hdfs
+#### 3.1. Apply additional patch to reproduce failure
+```
+# apply failure-specific patch
+cd $hadoop_dir
+git apply $script_dir/hook_HDFS-16633.patch
+
+cd $t2c_dir
+
+# build system
+./run_engine.sh recover_tests conf/samples/hdfs-3.1.3.properties
+
+# hdfs needs to apply patch again after recover
+./run_engine.sh patch conf/samples/hdfs-3.1.3.properties hdfs
+
+# run retrofit
+./run_engine.sh retrofit conf/samples/hdfs-3.1.3.properties 
+
+```
+#### 3.2. Run hdfs
 ```
 cd $script_dir
 ./trigger_HDFS-16633.sh <hdfs_absolute_path>
 ```
 
-#### 3.2. Check failed checkers
+#### 3.3. Check failed checkers
 Check t2c.prod.log to see the failed checker list
 
 ### 4. Cleanup

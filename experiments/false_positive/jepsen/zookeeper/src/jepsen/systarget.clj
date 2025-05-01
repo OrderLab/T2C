@@ -2,8 +2,7 @@
 ;; lein run test --node lift11 --node lift12 --node lift13 --node lift14 --node lift15 --ssh-private-key ~/.ssh/id_rsa &> test.log
 (ns jepsen.systarget
   (:gen-class)
-  (:require [avout.core         :as avout]
-            [clojure.tools.logging :refer :all]
+  (:require [clojure.tools.logging :refer :all]
             [jepsen [db         :as db]
                     [cli        :as cli]
                     [checker    :as checker]
@@ -20,7 +19,7 @@
 (def username "vqx2dc")
 (def password "")
 (def tilde (str "/u/" username "/"))
-(def privkey (str tilde ".ssh/uva_ed"))
+(def privkey (str "/u/vqx2dc/.ssh/uva_ed"))
 (def dir (str "/localtmp/" systarget "/"))
 (def binary "bin/zkServer.sh")
 (def pidfile (str dir "data/" systarget "_server.pid"))

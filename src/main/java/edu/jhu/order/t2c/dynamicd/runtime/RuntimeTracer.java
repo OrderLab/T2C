@@ -27,7 +27,7 @@ public class RuntimeTracer {
 
     public Queue<Future<?>> futures = new ConcurrentLinkedQueue<>();
     public ExecutorService executor = Executors.newFixedThreadPool(24); // change according to the proc number
-    public AtomicInteger execCountdown = new AtomicInteger(10);
+    public AtomicInteger execCountdown = new AtomicInteger(0);
 
     // to avoid we trigger same checker too many times in validation, use this to filter
     public Set<Integer> executedAssertionID = new HashSet<>();

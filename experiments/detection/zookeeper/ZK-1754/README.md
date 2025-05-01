@@ -56,7 +56,8 @@ cp -r $zookeeper_dir/templates_out/ $zookeeper_dir/templates_in/
 
 # copy valid checkers
 rm -rf $zookeeper_dir/templates_in/
-cp -r $t2c_dir/inv_verify_output/templates_in $zookeeper_dir
+cp -r $t2c_dir/inv_verify_output/verified_inv_dir $zookeeper_dir
+mv $zookeeper_dir/verified_inv_dir  $zookeeper_dir/templates_in/
 ```
 ### 3. Bug Detection
 #### 3.1. Run Zookeeper

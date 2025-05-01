@@ -4,13 +4,13 @@
 ```
 wget https://github.com/patric-r/jvmtop/releases/download/0.8.0/jvmtop-0.8.0.tar.gz
 tar -xzvf jvmtop-0.8.0.tar.gz
-cd jvmtop-0.8.0.tar.gz
+cd jvmtop-0.8.0
 ```
 
 ## Run target system
 Run the target system, write down the pid number
 
-You can get the pid value of zookeeper by running `cat $zookeeper_data/zookeeper_server.pid`, cassandra by running `pgrep -u "$USER" -f cassandra`. You need to get the pid value of hdfs and hbase manually.
+You can get the pid value of zookeeper by running `cat $zookeeper_data/zookeeper_server.pid`, cassandra by running `pgrep -u "$USER" -f cassandra`. You need to get the pid value of hdfs and hbase manually using `ps` command.
 
 ## Record the cpu and memory usage
 1. Modify the pid and out_file variable `run.sh`

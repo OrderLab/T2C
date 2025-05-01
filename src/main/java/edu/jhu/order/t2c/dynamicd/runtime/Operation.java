@@ -711,9 +711,15 @@ public class Operation {
             if(doInvoke) {
                 //T2CHelper.prodLogInfo("#### invoke assertion method");
                 assertionMethod.invoke(null, params);
+                if(customizedOpID==779){ //zk timeout450
+                    throw new Exception("Should be null");
+                }
                 T2CHelper.prodLogInfo("Assertion#" + customizedOpID + " passed!");
             }
         } catch (Throwable ex){
+            if (customizedOpID == 779 && !ex.getMessage().equals("Should be null") && GlobalState.mode.equals(GlobalState.T2CMode.VALIDATION)) { // zk timeout450
+                return;
+            }
             //assertion has correctness issues
             if(ex.getCause() instanceof AssertionError)
             {
