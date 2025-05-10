@@ -225,6 +225,8 @@ moved to a directory in the target system, for example, in zookeeper we need the
 ```bash
 cd <system path>
 mv templates_out templates_in
+# for HDFS, also run this command
+# cp -r <system_path>/templates_out ~/templates_in
 ```
 
 then start to validate with:
