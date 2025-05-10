@@ -91,6 +91,6 @@ public class MainWrapper {
 
         System.out.println("Success: "+RuntimeTracer.getInstance().success.get());
         System.out.println("Fail: "+RuntimeTracer.getInstance().fail.get());
-        System.out.println("Skip: "+RuntimeTracer.getInstance().skip.get());
+        // System.out.println("Skip: "+RuntimeTracer.getInstance().skip.get());
     }
 }

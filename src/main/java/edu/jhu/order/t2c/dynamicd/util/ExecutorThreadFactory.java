@@ -23,7 +23,7 @@ public class ExecutorThreadFactory implements ThreadFactory {
     public Thread newThread(Runnable runnable) {
         if (threadsNum.decrementAndGet() <= 0) {
             T2CHelper.prodLogInfo("Success: " + RuntimeTracer.getInstance().success.get() + " Fail: "
-                    + RuntimeTracer.getInstance().fail.get() + " Skip: " + RuntimeTracer.getInstance().skip.get()+"\n"+"SuccessMap: "+RuntimeTracer.getInstance().successMap+"\n"+"FailMap: "+RuntimeTracer.getInstance().failMap);
+                    + RuntimeTracer.getInstance().fail.get() +"\n"+"SuccessMap: "+RuntimeTracer.getInstance().successMap+"\n"+"FailMap: "+RuntimeTracer.getInstance().failMap);
             threadsNum.set(threshold);
         }
         return new Thread(runnable);

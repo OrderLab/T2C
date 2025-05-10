@@ -414,7 +414,7 @@ public class Assertion {
             // T2CHelper.prodLogInfo("Success: "+RuntimeTracer.getInstance().success.get()+" Fail: "+RuntimeTracer.getInstance().fail.get()+" Skip: "+RuntimeTracer.getInstance().skip.get());
            if(RuntimeTracer.getInstance().execCountdown.decrementAndGet()<=0){
                T2CHelper.prodLogInfo("Success: " + RuntimeTracer.getInstance().success.get() + " Fail: "
-                       + RuntimeTracer.getInstance().fail.get() + " Skip: " + RuntimeTracer.getInstance().skip.get()
+                       + RuntimeTracer.getInstance().fail.get()
                        + "\n" + "SuccessMap: " + RuntimeTracer.getInstance().successMap + "\n" + "FailMap: "
                        + RuntimeTracer.getInstance().failMap);
                RuntimeTracer.getInstance().execCountdown.set(0);
