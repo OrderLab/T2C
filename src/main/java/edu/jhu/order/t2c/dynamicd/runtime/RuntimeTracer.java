@@ -109,7 +109,7 @@ public class RuntimeTracer {
         }
 
         public void run() {
-            // T2CHelper.prodLogInfo("Added "+op.getOptypeStr()+" size "+ historyTraces.add(op));
+            T2CHelper.prodLogInfo("Added "+op.getOptypeStr()+" size "+ historyTraces.add(op));
             matchedCheckers.clear();
             updatedMap.clear();
             matchedTemplates.clear();
