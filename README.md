@@ -72,7 +72,7 @@ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 echo export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> ~/.bashrc
 ```
 
-Check whether Java 8 is successfully set by running `java -version`. If it's not set then you might want to add it manually to the PATH by running
+Check whether Java 8 is successfully set by running `java -version`. If it's not set or points to another java version then you might want to add it manually to the PATH by running
 ```bash
 export PATH="/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH"
 echo export PATH="/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH" >> ~/.bashrc
@@ -234,13 +234,14 @@ First, to validate the generated checkers, they need to be
 moved to a directory in the target system, for example, in zookeeper we need the directory  `zookeeper/templates_in`
 
 ```bash
-cd <system path>
+cd <system_dir_path>
 mv templates_out templates_in
 ```
 
 then start to validate with:
 
 ```bash
+cd <T2C>
 # You might want to run this command in tmux to prevent it being cancelled accidentally
 ./run_engine.sh validate conf/samples/zk-3.4.11.properties 
 ```
@@ -279,7 +280,7 @@ Delete templates_in folder if it exists, then move the validated checkers from `
 for example:
 
 ```bash
-cp -r <T2C>/inv_verify_output/verified_inv_dir/ <system path>/templates_in/
+cp -r <T2C>/inv_verify_output/verified_inv_dir/ <system_dir_path>/templates_in/
 ```
 
 Note that the templates_in folder should only contain the templates from inv_verify_output/verified_inv_dir/.
