@@ -74,6 +74,12 @@ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 echo export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> ~/.bashrc
 ```
 
+Check whether Java 8 is successfully set by running `java -version`. If it's not set then you might want to add it manually to the PATH by running
+```bash
+export PATH="/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH"
+echo export PATH="/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH" >> ~/.bashrc
+```
+
 ### 1. [Pre] Clone the T2C repository
 
 To clone from github:
