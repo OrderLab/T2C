@@ -46,6 +46,8 @@ Refer to [ZK-4362 guide](zookeeper/ZK-4362/README.md)
 Refer to [ZK-4646 guide](zookeeper/ZK-4646/README.md)
 
 ### 1.2 Cassandra
+> [!NOTE]  
+>  If you encounter a problem of "BUILD FAILED build.xml:267: java.net.UnknownHostException: repo2.maven.org", make sure to replace all lines of `repo2.maven.org` in build.xml and build.properties.default with `repo1.maven.org`. If it still fail then replace all `http://` to `https://` in build.xml and build.properties.default.
 #### 1.2.1 CS-14092
 Refer to [CS-14092 guide](cassandra/CASSANDRA-14092/README.md)
 #### 1.2.2 CS-14803

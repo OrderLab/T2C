@@ -333,6 +333,7 @@ FailMap: {org.apache.zookeeper.test.SaslAuthDesignatedClientTest#testSaslConfig-
 ### 9. Evaluation
 Evaluation cases readme are in this experiments [README](/experiments/README.md). This readme will guide you to install additional tools required to run the experiments. For these evaluations, we recommend starting from detecting ZK-1208 and HDFS-14699, then continue with false positive, and then ends with throughput and overhead. For false positive, throughput, and overhead baseline experiments, you can do it by running the system on the same version but without applying T2C on it.
 1. [experiments/detection](/experiments/detection/README.md) folder contains the bug detection evaluation
+Detection time in Table 5 can be calculated by the delta between time the bug is observed with the time the checker detects it (in T2C case, based on the t2c.prod.log). For simplicity, you can add `printf '%(%F:%T)T.%d\n' "$EPOCHSECONDS" "${EPOCHREALTIME#*.}"` in the trigger script right after the request is sent.
 2. [experiments/false_positive](/experiments/false_positive/README.md) folder contains the false positive evaluation
 3. [experiments/throughput](/experiments/throughput/README.md) folder contains the throughput evaluation
 4. [experiments/overhead](/experiments/overhead/README.md) folder contains the overhead evaluation
