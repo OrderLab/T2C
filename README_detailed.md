@@ -337,3 +337,4 @@ Detection time in Table 5 can be calculated by the delta between time the bug is
 2. [experiments/false_positive](/experiments/false_positive/README.md) folder contains the false positive evaluation
 3. [experiments/throughput](/experiments/throughput/README.md) folder contains the throughput evaluation
 4. [experiments/overhead](/experiments/overhead/README.md) folder contains the overhead evaluation
+5. [baseline](https://github.com/OrderLab/T2C-baseline) repository contains the guide for baseline checkers
