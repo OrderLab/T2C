@@ -1,0 +1,15 @@
+diff --git a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
+index 3b049841fb9..44263052920 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
++++ b/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/DataXceiver.java
+@@ -724,6 +724,10 @@ public void writeBlock(final ExtendedBlock block,
+           + Arrays.asList(targets));
+     }
+ 
++    if(true){
++      throw new IOException("CHANG: inject IOException!");
++    }
++
+     if (LOG.isDebugEnabled()) {
+       LOG.debug("opWriteBlock: stage={}, clientname={}\n  " +
+               "block  ={}, newGs={}, bytesRcvd=[{}, {}]\n  " +
