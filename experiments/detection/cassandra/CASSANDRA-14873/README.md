@@ -52,7 +52,7 @@ cp -r $cassandra_dir/templates_out/ $cassandra_dir/templates_in/
 # copy valid checkers
 rm -rf $cassandra_dir/templates_in/
 cp -r $t2c_dir/inv_verify_output/verified_inv_dir $cassandra_dir
-mv $zookeeper_dir/verified_inv_dir  $cassandra_dir/templates_in/
+mv $t2c_dir/verified_inv_dir  $cassandra_dir/templates_in/
 ```
 ### 3. Bug Detection
 #### 3.1. Run cassandra
