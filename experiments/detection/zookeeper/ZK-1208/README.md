@@ -22,6 +22,8 @@ script_dir=<this_file_parent_absolute_dir>
 cd $zookeeper_dir
 # checkout to buggy version of zookeeper
 git checkout tags/release-3.4.11
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" <cassandra_absolute_dir>/build.xml
+sed -i "s|http://|https://|g" <cassandra_absolute_dir>/ivysettings.xml
 # generate zookeeper config
 cp $script_dir/zoo.cfg ./conf
 echo dataDir=$zookeeper_dir >> ./conf/zoo.cfg

@@ -15,6 +15,18 @@ git reset --hard
 git clean -fdx
 git checkout e3c1c87739b9fede7a0fcad0aaad0ca65b5101a9
 
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
+
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES
 sed -i "s|patch_path=.*|patch_path=${t2c_dir}/conf/samples/patches/install_zk-1754.patch|g" $PATH_T2C/conf/samples/$PROPERTIES
@@ -41,6 +53,18 @@ cd $PATH_SYSTEM
 git reset --hard
 git clean -fdx
 git checkout 69710181
+
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
 
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES
@@ -96,6 +120,18 @@ git reset --hard
 git clean -fdx
 git checkout tags/cassandra-3.11.4
 
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
+
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES
 sed -i "s|patch_path=.*|patch_path=${t2c_dir}/conf/samples/patches/install_cs-3.11.patch|g" $PATH_T2C/conf/samples/$PROPERTIES
@@ -122,6 +158,18 @@ cd $PATH_SYSTEM
 git reset --hard
 git clean -fdx
 git checkout tags/cassandra-3.11.3
+
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
 
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES
@@ -150,6 +198,18 @@ git reset --hard
 git clean -fdx
 git checkout tags/cassandra-3.0.15
 
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
+
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES
 sed -i "s|patch_path=.*|patch_path=${t2c_dir}/conf/samples/patches/install_cs-3.0.15.patch|g" $PATH_T2C/conf/samples/$PROPERTIES
@@ -176,6 +236,18 @@ cd $PATH_SYSTEM
 git reset --hard
 git clean -fdx
 git checkout tags/cassandra-3.11.3
+
+if [ -f "$PATH_SYSTEM/build.xml" ]; then
+    sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" $PATH_SYSTEM/build.xml
+fi
+
+if [ -f "$PATH_SYSTEM/ivysettings.xml" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/ivysettings.xml
+fi
+
+if [ -f "$PATH_SYSTEM/build.properties.default" ]; then
+    sed -i "s|http://|https://|g" $PATH_SYSTEM/build.properties.default
+fi
 
 cd $PATH_T2C
 sed -i "s|system_dir_path=.*|system_dir_path=$PATH_SYSTEM|g" $PATH_T2C/conf/samples/$PROPERTIES

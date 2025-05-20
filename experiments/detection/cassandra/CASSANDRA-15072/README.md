@@ -14,6 +14,8 @@ cd ~
 
 git clone https://github.com/apache/cassandra.git cs2117
 cd ~/cs2117 && git checkout tags/cassandra-2.1.17
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" ~/cs2117/build.xml
+sed -i "s|http://|https://|g" ~/cs2117/build.properties.default
 ```
 
 In the node 1, clone cassandra 2.1.17 and 3.11.4
@@ -22,9 +24,13 @@ cd ~
 
 git clone https://github.com/apache/cassandra.git cs2117
 cd ~/cs2117 && git checkout tags/cassandra-2.1.17
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" ~/cs2117/build.xml
+sed -i "s|http://|https://|g" ~/cs2117/build.properties.default
 
 git clone https://github.com/apache/cassandra.git cs3114
 cd ~/cs3114 && git checkout tags/cassandra-3.11.4
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" ~/cs3114/build.xml
+sed -i "s|http://|https://|g" ~/cs3114/build.properties.default
 ```
 
 In the node 2, clone cassandra 2.1.17 and 3.11.4
@@ -33,9 +39,13 @@ cd ~
 
 git clone https://github.com/apache/cassandra.git cs2117
 cd ~/cs2117 && git checkout tags/cassandra-2.1.17
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" ~/cs2117/build.xml
+sed -i "s|http://|https://|g" ~/cs2117/build.properties.default
 
 git clone https://github.com/apache/cassandra.git cs3114
 cd ~/cs3114 && git checkout tags/cassandra-3.11.4
+sed -i "s|http://repo2.maven.org|https://repo1.maven.org|g" ~/cs3114/build.xml
+sed -i "s|http://|https://|g" ~/cs3114/build.properties.default
 ```
 #### 1.2. Modify t2c config (RUN ON NODE 0 and 1)
 In <t2c_dir>/conf/samples/cs-3.11.5.properties, modify `system_dir_path` to the cassandra folder absolute path, and modify `patch_path` to `${t2c_dir}/conf/samples/patches/install_cassandra-3.11.patch`

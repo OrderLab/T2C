@@ -20,6 +20,8 @@ script_dir=<this_file_parent_absolute_dir>
 cd $cassandra_dir
 # checkout to buggy version of cassandra
 git checkout tags/cassandra-3.11.3
+sed -i "s|http://|https://|g" <cassandra_absolute_dir>/ivysettings.xml
+sed -i "s|http://|https://|g" <cassandra_absolute_dir>/build.properties.default
 
 cd $t2c_dir
 
